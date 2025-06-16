@@ -1,0 +1,160 @@
+<ion-header mode="ios">
+  <ion-toolbar>
+    <ion-buttons>
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+
+<ion-content [fullscreen]="true" scrollY="true" class="ion-padding" forceOverscroll="true">
+
+  <div class="flex-row m-20 header">
+    <div></div>
+    <div class="flex-row">
+      <ion-icon name="search-outline"></ion-icon>
+      <ion-avatar></ion-avatar>
+    </div>
+  </div>
+
+  <div class="photo-cite m-20">
+
+  </div>
+
+  <div class="section_2">
+    <h2 class="m-10">Cité Shékina</h2>
+    <p class="flex-row m-20 section_2-head">
+      <span>Cité moderne</span>
+      <span> <ion-icon name="location"></ion-icon> Voir sur la carte</span>
+    </p>
+
+    <div class="grid">
+      <div class="box rounded">
+        <div class="">
+          <div class="box-c">
+            <p>Chambres prises</p>
+            <h2>13</h2>
+          </div>
+          <a [routerLink]="['/bailleur/chambres']" routerLinkActive="router-link-active" >Voir les chambres</a>
+        </div>
+        <div>
+
+        </div>
+      </div>
+
+      <div class="box rounded">
+        <div class="">
+          <div class="box-c">
+            <p>Chambres disponibles</p>
+            <h2>15</h2>
+          </div>
+
+        </div>
+        <div>
+
+        </div>
+      </div>
+
+      <div class="box rounded">
+        <div class="">
+          <div class="box-c">
+            <p>Réservations en attente</p>
+            <h2>13</h2>
+          </div>
+          <a href="">Voir les réservations</a>
+        </div>
+        <div>
+          <span class="badge">!</span>
+        </div>
+      </div>
+
+      <div class="box rounded">
+        <div class="">
+          <div class="box-c">
+            <p>Commentaires</p>
+            <h2>23</h2>
+          </div>
+          <a href="">Voir les commentaires</a>
+        </div>
+        <div>
+
+        </div>
+      </div>
+    </div>
+
+
+
+    <div class="section-22">
+      <div class="flex-row m-10 section-22-header">
+        <h2>Réservations</h2>
+        <span [routerLink]="['/bailleur/reservations']">
+           Voir plus >
+        </span>
+      </div>
+
+      <div class="box-gray">
+        <div class="first">
+          <ion-icon name="bed"></ion-icon>
+          <span class="span">Chambre A2</span>
+          <div>
+            <ion-avatar></ion-avatar>
+            <span>Anaïs FREDA</span>
+          </div>
+        </div>
+        <div class="second">
+          <h3>70.000 FCFA</h3>
+          <span class="badge">!</span>
+        </div>
+      </div>
+
+      <div class="box-gray">
+        <div class="first">
+          <ion-icon name="bed"></ion-icon>
+          <span class="span">Chambre A2</span>
+          <div>
+            <ion-avatar></ion-avatar>
+            <span>Anaïs FREDA</span>
+          </div>
+        </div>
+        <div class="second">
+          <h3>70.000 FCFA</h3>
+          <span class="badge">!</span>
+        </div>
+      </div>
+
+      <div class="box-gray">
+        <div class="first">
+          <ion-icon name="bed"></ion-icon>
+          <span class="span">Chambre A2</span>
+          <div>
+            <ion-avatar></ion-avatar>
+            <span>Anaïs FREDA</span>
+          </div>
+        </div>
+        <div class="second">
+          <h3>70.000 FCFA</h3>
+          <span class="badge">!</span>
+        </div>
+      </div>
+
+      <div class="box-gray">
+        <div class="first">
+          <ion-icon name="bed"></ion-icon>
+          <span class="span">Chambre A2</span>
+          <div>
+            <ion-avatar></ion-avatar>
+            <span>Anaïs FREDA</span>
+          </div>
+        </div>
+        <div class="second">
+          <h3>70.000 FCFA</h3>
+          <span class="badge">!</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+
+</ion-content>

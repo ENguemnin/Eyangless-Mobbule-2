@@ -1,0 +1,66 @@
+<ion-app>
+  <ion-menu side="start" menuId="menu-bailleur" contentId="main-layout">
+    <ion-header>
+      <ion-toolbar color="primary">
+        <ion-title>Menu</ion-title>
+        <ion-buttons slot="end">
+          <ion-button fill="clear" (click)="closeMenu()">
+            <ion-icon name="close" color="light"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="menu-content">
+      <!-- Profil utilisateur -->
+      <div class="user-profile">
+        <div class="user-avatar">
+          <ion-icon name="person-circle" color="medium"></ion-icon>
+        </div>
+        <div class="user-info">
+          <h3>Roy Melvin</h3>
+          <p>Bailleur</p>
+        </div>
+        <ion-icon name="chevron-forward" color="medium"></ion-icon>
+      </div>
+
+      <!-- Menu items -->
+      <div class="menu-items">
+        <ion-button expand="block" fill="solid" color="primary" class="menu-button active">
+          Accueil
+        </ion-button>
+
+        <ion-item button class="menu-item">
+          <ion-label>Ma cité</ion-label>
+        </ion-item>
+
+        <ion-item button class="menu-item">
+          <ion-label>Réservations</ion-label>
+        </ion-item>
+
+        <ion-item button class="menu-item">
+          <ion-label>Chambres</ion-label>
+        </ion-item>
+
+        <ion-item button class="menu-item">
+          <ion-label>Paramètres</ion-label>
+        </ion-item>
+      </div>
+
+      <!-- Déconnexion -->
+      <div class="logout-section">
+        <ion-button expand="block" fill="outline" color="danger" class="logout-button">
+          Déconnexion
+        </ion-button>
+      </div>
+
+      <!-- Version -->
+      <div class="version-info">
+        <p>Eyangless - version 0.1.1</p>
+      </div>
+    </ion-content>
+  </ion-menu>
+
+  <ion-router-outlet id="main-layout"></ion-router-outlet>
+</ion-app>
+

@@ -1,0 +1,7 @@
+{
+  "name": "transport_A",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}

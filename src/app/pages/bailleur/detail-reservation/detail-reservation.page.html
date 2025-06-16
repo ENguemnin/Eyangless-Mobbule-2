@@ -1,0 +1,130 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <!-- <ion-back-button></ion-back-button> -->
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back" color="primary"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <ion-title>Détails réservation</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="reservation-content">
+  <div class="reservation-container">
+    <!-- Header -->
+    <div class="reservation-header">
+      <h1>Réservation cité Shékina</h1>
+      <p class="date">10 juillet, 2025</p>
+    </div>
+
+    <!-- Main Card -->
+    <div class="reservation-card">
+      <!-- Room Info Section -->
+      <div class="room-info">
+        <div class="info-row">
+          <span class="label">Numéro de chambre</span>
+          <span class="value">A12</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Etage</span>
+          <span class="value">RDC</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Statut</span>
+          <span class="status-badge">Réservée</span>
+        </div>
+      </div>
+
+      <!-- Payment Info Section -->
+      <div class="payment-section">
+        <h2>Informations sur le paiement</h2>
+
+        <div class="payment-info">
+          <div class="info-row">
+            <span class="label">Montant</span>
+            <span class="value amount">10.000 Fcfa</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Mode de paiement</span>
+            <span class="value">Orange Money</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Date de réservation</span>
+            <span class="value">12.03.2025</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Titulaire</span>
+            <span class="value">WOUAMBA Roy</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="receipt-container">
+    <!-- Header -->
+    <div class="receipt-header">
+      <h1>Reçu de paiement</h1>
+    </div>
+
+    <!-- Receipt Image Card -->
+    <div class="receipt-card">
+      <div class="receipt-image">
+        <div class="crown-icon">👑</div>
+      </div>
+      <div class="file-info">
+        <span class="filename">IMG6483-283056825892.jpg</span>
+        <span class="verify-status">Vérifié</span>
+      </div>
+    </div>
+
+    <!-- Contract Button -->
+    <div class="contract-section">
+      <button class="contract-btn" (click)="establishContract()">Etablir le contrat de bail</button>
+    </div>
+  </div>
+
+  <!-- Fixed Bottom Buttons -->
+  <div class="fixed-buttons">
+    <button class="refuse-btn" (click)="onRefuse()">Refuser</button>
+    <button class="validate-btn" (click)="onValidate()">Valider</button>
+  </div>
+
+</ion-content>
+
+
+
+<!-- Success Modal -->
+<div class="modal" [style.display]="showSuccessModalFlag ? 'flex' : 'none'">
+  <div class="modal-content success-modal">
+    <div class="success-icon">✓</div>
+    <h2>La réservation a été validée avec succès</h2>
+    <p>Votre réservation a effectivement été prise en compte.</p>
+    <p>Vous pouvez consulter le contrat de bail dans l'onglet réservation. Il faudra le scanner et le renvoyer au propriétaire pour signature des 2 partis.</p>
+  </div>
+</div>
+
+<!-- Refuse Modal -->
+<div class="modal" [style.display]="showRefuseModalFlag ? 'flex' : 'none'">
+  <div class="modal-content refuse-modal">
+    <button class="close-btn" (click)="closeRefuseModal()">×</button>
+    <div class="refuse-icon">×</div>
+    <h2>Annuler la réservation ?</h2>
+    <p>Voulez-vous vraiment annuler la réservation ?</p>
+    <p class="reason-text">Donnez nous la raison</p>
+
+    <div class="reason-options">
+      <button class="reason-btn" [class.selected]="selectedReason === 'Faux reçu'" (click)="selectReason('Faux reçu')">Faux reçu</button>
+      <button class="reason-btn" [class.selected]="selectedReason === 'Reçu illisible'" (click)="selectReason('Reçu illisible')">Reçu illisible</button>
+      <button class="reason-btn" [class.selected]="selectedReason === 'Autre'" (click)="selectReason('Autre')">Autre</button>
+    </div>
+
+    <div class="custom-reason" *ngIf="showCustomReasonInput">
+      <input type="text" [(ngModel)]="customReasonText" placeholder="Précisez la raison..." class="custom-reason-input">
+    </div>
+
+    <button class="cancel-btn" (click)="confirmRefusal()">Annuler</button>
+  </div>
+</div>

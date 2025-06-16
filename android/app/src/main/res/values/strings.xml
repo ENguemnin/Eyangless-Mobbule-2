@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Lolhatsapp Nigga</string>
+    <string name="title_activity_main">Lolhatsapp Nigga</string>
+    <string name="package_name">com.sji.lol</string>
+    <string name="custom_url_scheme">com.sji.lol</string>
+</resources>

@@ -1,0 +1,266 @@
+// Variables CSS pour la couleur personnalisée
+:root {
+  --custom-primary: #07B29E;
+  --custom-primary-rgb: 7, 178, 158;
+  --custom-primary-contrast: #ffffff;
+  --custom-primary-contrast-rgb: 255, 255, 255;
+  --custom-primary-shade: #069080;
+  --custom-primary-tint: #20bba8;
+}
+
+// Contenu principal
+.contacts-content {
+  --background: #f8f9fa;
+
+  .content-wrapper {
+    padding: 20px 16px;
+    padding-bottom: 100px; // Espace pour le bouton fixe
+  }
+}
+
+// En-tête de section
+.section-header {
+  margin-bottom: 16px;
+
+  h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+  }
+}
+
+// Liste des contacts
+.contacts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+// Item de contact
+.contact-item {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  .contact-info {
+    flex: 1;
+
+    .contact-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin: 0 0 8px 0;
+    }
+
+    .contact-details {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .contact-detail {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .detail-icon {
+          font-size: 16px;
+          color: #666;
+          min-width: 16px;
+        }
+
+        .detail-text {
+          font-size: 14px;
+          color: #666;
+        }
+      }
+
+      .contact-role {
+        margin-top: 4px;
+
+        .role-text {
+          font-size: 13px;
+          color: var(--custom-primary);
+          font-weight: 500;
+        }
+      }
+    }
+  }
+
+  .contact-actions {
+    display: flex;
+    align-items: flex-start;
+
+    ion-button {
+      --color: #dc3545;
+
+      ion-icon {
+        font-size: 24px;
+      }
+    }
+  }
+}
+
+// État vide
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+
+  .empty-icon {
+    font-size: 64px;
+    color: #ccc;
+    margin-bottom: 16px;
+  }
+
+  .empty-message {
+    font-size: 16px;
+    color: #666;
+    text-align: center;
+    margin: 0;
+  }
+}
+
+// Bouton fixe en bas
+.fixed-bottom-button {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background: linear-gradient(to top, #ffffff 0%, #ffffff 80%, rgba(255, 255, 255, 0) 100%);
+  z-index: 1000;
+
+
+}
+
+// Toolbar personnalisé
+ion-toolbar {
+  --background: #ffffff;
+  --color: #1a1a1a;
+  --border-color: #e0e0e0;
+
+  ion-title {
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  ion-button {
+    --color: var(--custom-primary);
+
+    ion-icon {
+      font-size: 24px;
+    }
+  }
+}
+
+// Modal styles
+.modal-content {
+  padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+
+  .modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+  }
+
+  ion-button {
+    --color: #dc3545;
+
+    ion-icon {
+      font-size: 24px;
+    }
+  }
+}
+
+.modal-form {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+
+  .form-group {
+    margin-bottom: 20px;
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+
+    .custom-input {
+      --background: #f8f9fa;
+      --border-color: #e0e0e0;
+      --border-radius: 8px;
+      --padding-start: 16px;
+      --padding-end: 16px;
+      --padding-top: 12px;
+      --padding-bottom: 12px;
+      --color: #1a1a1a;
+      --placeholder-color: #999;
+
+      font-size: 16px;
+
+      &.ion-focused {
+        --border-color: var(--custom-primary);
+      }
+    }
+  }
+}
+
+.modal-buttons {
+  padding: 20px;
+  display: flex;
+  gap: 12px;
+  border-top: 1px solid #e0e0e0;
+
+  ion-button {
+    flex: 1;
+    --border-radius: 8px;
+    --padding-top: 12px;
+    --padding-bottom: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    text-transform: none;
+
+    &[fill="outline"] {
+      --border-color: #ccc;
+      --color: #666;
+    }
+
+    // &.custom-button {
+    //   --background: var(--custom-primary);
+    //   --color: var(--custom-primary-contrast);
+    // }
+  }
+}
+
+// Responsive pour le modal
+@media (min-width: 768px) {
+  ion-modal {
+    --width: 500px;
+    --height: auto;
+    --border-radius: 16px;
+  }
+}

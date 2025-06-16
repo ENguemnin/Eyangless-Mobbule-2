@@ -1,0 +1,69 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back" color="primary"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Suppléments</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="saveSupplements()">
+        <ion-icon name="checkmark" color="primary"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="supplements-content">
+  <div class="content-wrapper">
+    <!-- Section Commun -->
+    <div class="section-header">
+      <h2>Commun</h2>
+    </div>
+
+    <!-- Suppléments par défaut -->
+    <div class="supplements-list">
+      <div class="supplement-item" *ngFor="let supplement of defaultSupplements">
+        <div class="supplement-info">
+          <ion-label class="supplement-label">{{ supplement.label }}</ion-label>
+        </div>
+        <ion-toggle
+          [(ngModel)]="supplement.value"
+          class="custom-toggle">
+        </ion-toggle>
+      </div>
+    </div>
+
+    <!-- Suppléments personnalisés -->
+    <div class="supplements-list" *ngIf="customSupplements.length > 0">
+      <div class="supplement-item" *ngFor="let supplement of customSupplements">
+        <div class="supplement-info">
+          <ion-label class="supplement-label">{{ supplement.label }}</ion-label>
+        </div>
+        <div class="supplement-actions">
+          <ion-toggle
+            [(ngModel)]="supplement.value"
+            class="custom-toggle">
+          </ion-toggle>
+          <ion-button
+            fill="clear"
+            size="small"
+            color="danger"
+            (click)="removeCustomSupplement(supplement.id)">
+            <ion-icon name="trash" slot="icon-only"></ion-icon>
+          </ion-button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bouton fixe en bas -->
+  <div class="fixed-bottom-button">
+    <ion-button
+      expand="block"
+      class="custom-button"
+      (click)="addCustomSupplement()">
+      Ajouter un supplément
+    </ion-button>
+  </div>
+</ion-content>
