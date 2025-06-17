@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   IonHeader,
   IonToolbar,
@@ -27,6 +27,8 @@ import {
   IonAvatar,
   IonRefresher,
   IonRefresherContent,
+  IonModal,
+  ToastController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -49,8 +51,11 @@ import {
   personOutline,
   phonePortraitOutline,
   chatbubblesOutline,
+  closeOutline,
+  sendOutline
 } from 'ionicons/icons';
 import { FormsModule } from '@angular/forms';
+import { CommentsComponent } from '../../../components/comments/comments.component';
 
 interface CityDetail {
   id: number;
@@ -96,8 +101,11 @@ interface CityDetail {
     };
   };
   comments: Array<{
+    id: number;
     author: string;
     text: string;
+    rating: number;
+    date: string;
     anonymous?: boolean;
   }>;
   roomDetails: {
@@ -301,12 +309,22 @@ interface CityDetail {
                     <ion-avatar class="comment-avatar">
                       <div class="avatar-placeholder">{{ getInitials(comment.author) }}</div>
                     </ion-avatar>
-                    <span class="comment-author">{{ comment.anonymous ? 'Anonyme' : comment.author }}</span>
+                    <div class="comment-meta">
+                      <span class="comment-author">{{ comment.anonymous ? 'Anonyme' : comment.author }}</span>
+                      <div class="comment-rating">
+                        <ion-icon
+                          *ngFor="let i of [1, 2, 3, 4, 5]"
+                          [name]="comment.rating >= i ? 'star' : 'star-outline'"
+                          [class.filled]="comment.rating >= i"
+                        ></ion-icon>
+                      </div>
+                    </div>
                   </div>
                   <p class="comment-text">{{ comment.text }}</p>
-                  <button class="more-button">Plus</button>
+                  <span class="comment-date">Publié le {{ comment.date }}</span>
+                  <button class="more-button" (click)="openCommentsModal()">Plus</button>
                 </div>
-                <ion-button expand="block" fill="outline" color="primary" class="add-comment-btn">
+                <ion-button expand="block" fill="outline" color="primary" class="add-comment-btn" (click)="openCommentsModal()">
                   Laisser un commentaire
                 </ion-button>
               </div>
@@ -373,6 +391,17 @@ interface CityDetail {
         </div>
       </ion-toolbar>
     </ion-footer>
+
+    <!-- Modal Commentaires -->
+    <ion-modal [isOpen]="showCommentsModal" (didDismiss)="closeCommentsModal()">
+      <ng-template>
+        <app-comments 
+          [cityId]="city?.id" 
+          [isOpen]="showCommentsModal"
+          (close)="closeCommentsModal()">
+        </app-comments>
+      </ng-template>
+    </ion-modal>
   `,
   styles: [
     `
@@ -686,7 +715,7 @@ interface CityDetail {
 
           .comment-header {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 12px;
             margin-bottom: 8px;
 
@@ -708,9 +737,29 @@ interface CityDetail {
               }
             }
 
+            .comment-meta {
+              flex: 1;
+            }
+
             .comment-author {
               font-weight: 500;
               color: #333;
+              display: block;
+              margin-bottom: 4px;
+            }
+
+            .comment-rating {
+              display: flex;
+              gap: 2px;
+
+              ion-icon {
+                font-size: 12px;
+                color: #ddd;
+
+                &.filled {
+                  color: #FFD700;
+                }
+              }
             }
           }
 
@@ -718,6 +767,13 @@ interface CityDetail {
             margin: 0 0 8px 0;
             color: #666;
             line-height: 1.4;
+          }
+
+          .comment-date {
+            font-size: 12px;
+            color: #999;
+            display: block;
+            margin-bottom: 8px;
           }
 
           .more-button {
@@ -847,13 +903,20 @@ interface CityDetail {
     IonAvatar,
     IonRefresher,
     IonRefresherContent,
+    IonModal,
+    CommentsComponent,
   ],
 })
 export class CityDetailsPage implements OnInit {
   city?: CityDetail;
   selectedSegment = 'description';
+  showCommentsModal = false;
 
-  constructor(private route: ActivatedRoute) {
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private toastController: ToastController
+  ) {
     addIcons({
       starOutline,
       star,
@@ -874,6 +937,8 @@ export class CityDetailsPage implements OnInit {
       personOutline,
       phonePortraitOutline,
       chatbubblesOutline,
+      closeOutline,
+      sendOutline,
     });
   }
 
@@ -927,13 +992,26 @@ export class CityDetailsPage implements OnInit {
       },
       comments: [
         {
-          author: 'Roy',
-          text: 'Je ne sais même pas ce que je peux dire sur cette cité pour que je ne tombe pas vraiment',
+          id: 1,
+          author: 'Roy Melvin',
+          text: 'Je ne sais même pas ce que je peux dire sur cette cité, parce que je ne l\'aime pas vraiment.',
+          rating: 4,
+          date: '02/05/2025',
         },
         {
+          id: 2,
           author: 'Anonyme',
-          text: 'Anonymement, je laisse une bonne note à cette cité pour son libertinage olalal.',
+          text: 'Anonymement, je laisse une bonne note à cette cité pour son libertinage absolu.',
+          rating: 4,
+          date: '02/05/2025',
           anonymous: true,
+        },
+        {
+          id: 3,
+          author: 'Steves DK',
+          text: 'Entre temps moi je ne suis pas par rapport à cette cité, mais comme on m\'a forcé à venir parler ici, et qu\'on m\'a forcé à dire que c\'est une bonne cité, je dis donc que c\'est une très bonne cité.',
+          rating: 4,
+          date: '02/05/2025',
         },
       ],
       roomDetails: {
@@ -981,8 +1059,30 @@ export class CityDetailsPage implements OnInit {
     }, 2000);
   }
 
-  reserve() {
-    console.log('Réservation en cours...');
-    // Logique de réservation
+  openCommentsModal() {
+    this.showCommentsModal = true;
+  }
+
+  closeCommentsModal() {
+    this.showCommentsModal = false;
+  }
+
+  async reserve() {
+    if (!this.city) return;
+
+    // Vérifier s'il y a des chambres disponibles
+    if (this.city.availableRooms === 0) {
+      const toast = await this.toastController.create({
+        message: 'Aucune chambre disponible pour cette cité',
+        duration: 2000,
+        position: 'bottom',
+        color: 'warning'
+      });
+      await toast.present();
+      return;
+    }
+
+    // Naviguer vers la page de sélection de chambre
+    this.router.navigate(['/room-selection', this.city.id]);
   }
 }

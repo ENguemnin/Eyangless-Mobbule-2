@@ -56,6 +56,24 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/Utilisateur/Auth/user-type-selection/user-type-selection.page').then( m => m.UserTypeSelectionPage)
   },
 
+  // Nouvelles routes pour le système de réservation
+  {
+    path: 'room-selection/:id',
+    loadComponent: () => import('./pages/Utilisateur/room-selection/room-selection.page').then(m => m.RoomSelectionPage)
+  },
+  {
+    path: 'reservation-payment',
+    loadComponent: () => import('./pages/Utilisateur/reservation-payment/reservation-payment.page').then(m => m.ReservationPaymentPage)
+  },
+  {
+    path: 'reservations',
+    loadComponent: () => import('./pages/Utilisateur/reservations/reservations.page').then(m => m.ReservationsPage)
+  },
+  {
+    path: 'reservation-details/:id',
+    loadComponent: () => import('./pages/Utilisateur/reservation-details/reservation-details.page').then(m => m.ReservationDetailsPage)
+  },
+
 
 
 
