@@ -92,7 +92,7 @@ interface Reservation {
 
           <div class="info-item">
             <span class="info-label">Statut</span>
-            <ion-badge 
+            <ion-badge
               [color]="getStatusColor(reservation.status)"
               class="status-badge"
             >
@@ -104,7 +104,7 @@ interface Reservation {
         <!-- Informations sur le paiement -->
         <div class="payment-info-section">
           <h3>Informations sur le paiement</h3>
-          
+
           <div class="payment-grid">
             <div class="payment-item">
               <span class="payment-label">Montant</span>
@@ -146,8 +146,8 @@ interface Reservation {
             <img [src]="reservation.receiptImage" alt="Reçu de paiement" />
             <div class="receipt-info">
               <p class="receipt-filename">{{ reservation.receiptFileName }}</p>
-              <a 
-                href="#" 
+              <a
+                href="#"
                 class="verification-link"
                 [class.verified]="reservation.receiptVerified"
                 (click)="$event.preventDefault()"
@@ -158,16 +158,16 @@ interface Reservation {
           </div>
 
           <!-- Bouton de validation -->
-          <ion-button 
-            expand="block" 
-            color="primary" 
-            class="validate-button"
-            [disabled]="!reservation.receiptImage || reservation.status === 'payee'"
-            (click)="validateReservation()"
-            *ngIf="reservation.status === 'reservee'"
-          >
-            Valider la réservation
-          </ion-button>
+ <ion-button
+  expand="block"
+  color="primary"
+  class="validate-button"
+  [disabled]="!reservation.receiptImage || reservation.status !== 'reservee'"
+  (click)="validateReservation()"
+  *ngIf="reservation.status === 'reservee'"
+>
+  Valider la réservation
+</ion-button>
         </div>
 
         <!-- Section contrat de bail -->
@@ -181,8 +181,8 @@ interface Reservation {
               <p class="contract-title">Contrat de bail - {{ reservation.cityName }}</p>
               <p class="contract-description">Document PDF à signer</p>
             </div>
-            <ion-button 
-              color="success" 
+            <ion-button
+              color="success"
               size="small"
               (click)="downloadContract()"
             >
@@ -673,7 +673,7 @@ export class ReservationDetailsPage implements OnInit {
 
   getDisplayAmount(): string {
     if (!this.reservation) return '0';
-    
+
     // Si payée, afficher 5.000, sinon 10.000
     const amount = this.reservation.status === 'payee' ? 5000 : this.reservation.amount;
     return amount.toLocaleString();
@@ -796,7 +796,7 @@ export class ReservationDetailsPage implements OnInit {
         this.reservation.receiptVerified = true;
         this.saveReservation();
       }
-      
+
       loading.dismiss();
       this.showConfirmationModal = true;
     }, 2000);
@@ -820,21 +820,53 @@ export class ReservationDetailsPage implements OnInit {
     this.showConfirmationModal = false;
   }
 
-  async downloadContract() {
-    const loading = await this.loadingController.create({
-      message: 'Génération du contrat...',
-      duration: 1500
-    });
-    await loading.present();
+//  async downloadContract() {
+//   const loading = await this.loadingController.create({
+//     message: 'Génération du contrat...',
+//     duration: 1500
+//   });
+//   await loading.present();
 
-    setTimeout(async () => {
-      await loading.dismiss();
-      await this.showToast('Contrat téléchargé avec succès');
-      
-      // Ici vous pourriez implémenter le téléchargement réel du PDF
-      console.log('Téléchargement du contrat pour:', this.reservation?.cityName);
-    }, 1500);
-  }
+//   setTimeout(async () => {
+//     await loading.dismiss();
+//     await this.showToast('Contrat téléchargé avec succès');
+
+//     // Téléchargement réel du PDF
+//     if (this.reservation?.contractUrl) {
+//       const link = document.createElement('a');
+//       link.href = this.reservation.contractUrl;
+//       link.download = 'contrat.pdf';
+//       document.body.appendChild(link);
+//       link.click();
+//       document.body.removeChild(link);
+//     }
+//     console.log('Téléchargement du contrat pour:', this.reservation?.cityName);
+//   }, 1500);
+// }
+
+async downloadContract() {
+  const loading = await this.loadingController.create({
+    message: 'Génération du contrat...',
+    duration: 1500
+  });
+  await loading.present();
+
+  setTimeout(async () => {
+    await loading.dismiss();
+    await this.showToast('Contrat téléchargé avec succès');
+
+    // Téléchargement réel du PDF depuis l'URL fixe
+    const url = '';
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'contrat.pdf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    console.log('Téléchargement du contrat pour:', this.reservation?.cityName);
+  }, 1500);
+}
 
   private async showToast(message: string, color: 'success' | 'warning' | 'danger' = 'success') {
     const toast = await this.toastController.create({

@@ -79,40 +79,6 @@ export const routes: Routes = [
 
   // Les routes des interfaces du bailleur
 
-   {
-    path: 'bailleur',
-    loadComponent: () => import('./pages/bailleur/tabs/tabs.page').then( m => m.TabsPage),
-    children: bailleur_routes
-  },
-  {
-    path: 'update-cite',
-    loadComponent: () => import('./pages/bailleur/update-cite/update-cite.page').then( m => m.UpdateCitePage)
-  },
-  {
-    path: 'update-caracteristiques',
-    loadComponent: () => import('./pages/bailleur/update-caracteristiques/update-caracteristiques.page').then( m => m.UpdateCaracteristiquesPage)
-  },
-  {
-    path: 'update-supplements',
-    loadComponent: () => import('./pages/bailleur/update-supplements/update-supplements.page').then( m => m.UpdateSupplementsPage)
-  },
-  {
-    path: 'update-carte',
-    loadComponent: () => import('./pages/bailleur/update-carte/update-carte.page').then( m => m.UpdateCartePage)
-  },
-  {
-    path: 'update-contacts',
-    loadComponent: () => import('./pages/bailleur/update-contacts/update-contacts.page').then( m => m.UpdateContactsPage)
-  },
-  {
-    path: 'chambres-prises',
-    loadComponent: () => import('./pages/bailleur/chambres-prises/chambres-prises.page').then( m => m.ChambresPrisesPage)
-  },
-  {
-    path: 'detail-reservation',
-    loadComponent: () => import('./pages/bailleur/detail-reservation/detail-reservation.page').then( m => m.DetailReservationPage)
-  },
-
 
 
 ];
