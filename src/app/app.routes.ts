@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { bailleur_routes } from './pages/bailleur/tabs/tabs.routes';
+// import { bailleur_routes } from './pages/bailleur/tabs/tabs.routes';
 
 export const routes: Routes = [
 
