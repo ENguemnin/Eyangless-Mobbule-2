@@ -37,24 +37,22 @@
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 // @import '@ionic/angular/css/palettes/dark.system.css';
 
-
-*{
-  font-family: "Poppins";
-
+* {
+  font-family: "Poppins", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.bouton{
+.bouton {
   background-color: #07B29E;
   color: white;
   border-radius: 200px;
   padding: 5px 30px;
 }
 
-.rounded{
+.rounded {
   border-radius: 20px;
 }
 
-.badge{
+.badge {
   background-color: red;
   color: white;
   width: 20px;
@@ -66,37 +64,33 @@
   font-weight: bold;
 }
 
-a{
+a {
   color: #07B29E;
   text-decoration: underline;
 }
 
-
-.flex-row{
+.flex-row {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
 }
 
-
-.box-gray{
+.box-gray {
   border: 1px solid #00000020;
   padding: 15px;
   border-radius: 20px;
 }
 
-
-h1, h2, h3, h4, p{
+h1, h2, h3, h4, p {
   margin: 0;
 }
 
-.m-10{
+.m-10 {
   margin-bottom: 10px;
 }
-.m-20{
+.m-20 {
   margin-bottom: 20px;
 }
-
 
 // Dans src/theme/variables.scss
 :root {
@@ -106,4 +100,106 @@ h1, h2, h3, h4, p{
   --ion-color-primary-contrast-rgb: 255, 255, 255;
   --ion-color-primary-shade: #069080;
   --ion-color-primary-tint: #20bba8;
+}
+
+/* Styles globaux pour les popups de carte */
+.marker-popup {
+  text-align: center;
+  min-width: 200px;
+}
+
+.marker-popup h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.popup-rating {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.popup-rating span:first-child {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.marker-popup .available {
+  margin: 8px 0;
+  font-size: 12px;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.popup-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.popup-button {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.popup-button:first-child {
+  background: #1dd1a1;
+  color: white;
+}
+
+.popup-button:first-child:hover {
+  background: #17b890;
+}
+
+.popup-button.route {
+  background: #f8f9fa;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+.popup-button.route:hover {
+  background: #e5e7eb;
+}
+
+/* Styles pour les marqueurs personnalisés */
+.custom-marker {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.custom-marker:hover {
+  transform: scale(1.1);
+}
+
+/* Animation pour le marqueur utilisateur */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(33, 150, 243, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(33, 150, 243, 0);
+  }
+}
+
+.user-marker {
+  animation: pulse 2s infinite;
 }

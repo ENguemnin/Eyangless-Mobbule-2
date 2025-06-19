@@ -19,6 +19,7 @@ import {
   IonFooter,
   IonTabBar,
   IonTabButton,
+  IonBadge,
   AlertController,
   LoadingController,
   ToastController
@@ -35,7 +36,10 @@ import {
   personOutline,
   carOutline,
   walkOutline,
-  bicycleOutline
+  bicycleOutline,
+  chevronForwardOutline,
+  starOutline,
+  star
 } from 'ionicons/icons';
 import * as L from 'leaflet';
 
@@ -48,6 +52,10 @@ interface MapLocation {
   rooms?: number;
   available?: number;
   rating?: number;
+  distance?: string;
+  walkTime?: string;
+  description?: string;
+  price?: number;
 }
 
 interface RouteInfo {
@@ -79,7 +87,7 @@ interface RouteInfo {
         <ion-searchbar
           [(ngModel)]="searchTerm"
           (ionInput)="onSearch($event)"
-          placeholder="Rechercher..."
+          placeholder="Rechercher une cité..."
           debounce="300"
           show-clear-button="focus"
           class="custom-searchbar"
@@ -95,14 +103,15 @@ interface RouteInfo {
           <ion-item 
             *ngFor="let location of searchResults"
             button
-            (click)="selectLocation(location)"
+            (click)="selectLocationFromSearch(location)"
             class="search-result-item"
           >
             <div class="search-result-content">
               <h4>{{ location.name }}</h4>
               <p *ngIf="location.rooms">{{ location.rooms }} chambres</p>
+              <p class="distance" *ngIf="location.distance">{{ location.distance }}</p>
             </div>
-            <ion-icon name="navigate-outline" slot="end" color="primary"></ion-icon>
+            <ion-icon name="chevron-forward-outline" slot="end" color="primary"></ion-icon>
           </ion-item>
         </ion-list>
       </div>
@@ -158,18 +167,110 @@ interface RouteInfo {
       <ng-template>
         <div class="modal-content">
           <div class="modal-header">
-            <h2>Choisir la destination</h2>
+            <h2>Changer position</h2>
             <ion-button fill="clear" size="small" (click)="closeDestinationModal()">
               <ion-icon name="close-outline"></ion-icon>
             </ion-button>
           </div>
           <div class="destination-options">
-            <ion-item button (click)="selectDestination('campus')">
-              <ion-label>Le campus d'Eyang</ion-label>
-            </ion-item>
             <ion-item button (click)="selectDestination('position')">
               <ion-label>Ma position</ion-label>
             </ion-item>
+            <ion-item button (click)="selectDestination('campus')">
+              <ion-label>Le campus d'Eyang</ion-label>
+            </ion-item>
+          </div>
+        </div>
+      </ng-template>
+    </ion-modal>
+
+    <!-- Modal de détails de cité depuis la carte -->
+    <ion-modal [isOpen]="showCityModal" (didDismiss)="closeCityModal()">
+      <ng-template>
+        <div class="city-modal-content" *ngIf="selectedCityFromMap">
+          <div class="city-modal-header">
+            <ion-button fill="clear" size="small" (click)="closeCityModal()">
+              <ion-icon name="close-outline"></ion-icon>
+            </ion-button>
+          </div>
+          
+          <div class="city-image-container">
+            <img [src]="getCityImage(selectedCityFromMap.id)" [alt]="selectedCityFromMap.name" />
+          </div>
+
+          <div class="city-info-section">
+            <div class="city-header">
+              <h2>{{ selectedCityFromMap.name }}</h2>
+              <div class="city-rating">
+                <ion-icon name="star" color="warning"></ion-icon>
+                <span>{{ selectedCityFromMap.rating }}</span>
+              </div>
+            </div>
+
+            <div class="city-stats">
+              <span class="rooms-count">{{ selectedCityFromMap.rooms }} chambres</span>
+              <ion-badge color="success" *ngIf="selectedCityFromMap.available">
+                {{ selectedCityFromMap.available }} Chambres libres
+              </ion-badge>
+            </div>
+
+            <div class="city-description">
+              <p>{{ getCityDescription(selectedCityFromMap.id) }}</p>
+            </div>
+
+            <div class="city-price">
+              <h3>Prix de la chambre</h3>
+              <div class="price-info">
+                <span class="main-price">{{ selectedCityFromMap.price | number }} FCFA/mois</span>
+                <span class="yearly-price">({{ (selectedCityFromMap.price! * 10) | number }} FCFA / 10 mois)</span>
+              </div>
+            </div>
+
+            <div class="city-location">
+              <h3>🗺️ Localisation</h3>
+              <div class="location-info">
+                <p>📍 Distance depuis votre position : {{ selectedCityFromMap.distance }}</p>
+                <p>🚶 Temps de marche : {{ selectedCityFromMap.walkTime }}</p>
+                <p>🏫 Distance du campus : 1.2km</p>
+              </div>
+            </div>
+
+            <div class="city-amenities">
+              <h3>📋 Commodités</h3>
+              <div class="amenities-list">
+                <span class="amenity">• Meublée</span>
+                <span class="amenity">• Sécurisée</span>
+                <span class="amenity">• Électricité</span>
+                <span class="amenity">• Eau courante</span>
+              </div>
+            </div>
+
+            <div class="city-comments-preview">
+              <h3>💬 Commentaires ({{ getCommentsCount(selectedCityFromMap.id) }})</h3>
+              <div class="comment-preview" *ngFor="let comment of getPreviewComments(selectedCityFromMap.id)">
+                <div class="comment-author">~{{ comment.author }}</div>
+                <div class="comment-rating">
+                  <ion-icon *ngFor="let i of [1,2,3,4,5]" 
+                    [name]="comment.rating >= i ? 'star' : 'star-outline'"
+                    [class.filled]="comment.rating >= i">
+                  </ion-icon>
+                </div>
+                <p class="comment-text">{{ comment.text }}</p>
+                <span class="comment-date">Publié le {{ comment.date }}</span>
+              </div>
+              <ion-button fill="clear" color="primary" (click)="viewAllComments()">
+                Plus
+              </ion-button>
+            </div>
+
+            <div class="city-actions">
+              <ion-button expand="block" color="primary" (click)="viewCityDetails()">
+                Voir plus
+              </ion-button>
+              <ion-button expand="block" fill="outline" color="primary" (click)="calculateRouteToCity()">
+                Itinéraire
+              </ion-button>
+            </div>
           </div>
         </div>
       </ng-template>
@@ -284,7 +385,7 @@ interface RouteInfo {
     .search-result-item {
       --padding-start: 16px;
       --padding-end: 16px;
-      --min-height: 60px;
+      --min-height: 70px;
     }
 
     .search-result-content h4 {
@@ -295,9 +396,15 @@ interface RouteInfo {
     }
 
     .search-result-content p {
-      margin: 0;
+      margin: 0 0 2px 0;
       font-size: 14px;
       color: var(--text-secondary);
+    }
+
+    .search-result-content .distance {
+      font-size: 12px;
+      color: var(--primary-color);
+      font-weight: 600;
     }
 
     /* Carte */
@@ -393,7 +500,7 @@ interface RouteInfo {
       gap: 8px;
     }
 
-    /* Modal */
+    /* Modal de destination */
     .modal-content {
       padding: 20px;
     }
@@ -417,6 +524,218 @@ interface RouteInfo {
       --padding-end: 0;
       --min-height: 48px;
       margin-bottom: 8px;
+    }
+
+    /* Modal de cité */
+    .city-modal-content {
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .city-modal-header {
+      position: sticky;
+      top: 0;
+      background: white;
+      z-index: 10;
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .city-image-container {
+      height: 200px;
+      overflow: hidden;
+    }
+
+    .city-image-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .city-info-section {
+      padding: 20px;
+    }
+
+    .city-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .city-header h2 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .city-rating {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .city-rating ion-icon {
+      font-size: 16px;
+    }
+
+    .city-rating span {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .city-stats {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .rooms-count {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .city-description {
+      margin-bottom: 20px;
+    }
+
+    .city-description p {
+      margin: 0;
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .city-price {
+      margin-bottom: 20px;
+    }
+
+    .city-price h3 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .price-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main-price {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+
+    .yearly-price {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .city-location {
+      margin-bottom: 20px;
+    }
+
+    .city-location h3 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .location-info p {
+      margin: 0 0 4px 0;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .city-amenities {
+      margin-bottom: 20px;
+    }
+
+    .city-amenities h3 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .amenities-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .amenity {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .city-comments-preview {
+      margin-bottom: 20px;
+    }
+
+    .city-comments-preview h3 {
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .comment-preview {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .comment-author {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .comment-rating {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 8px;
+    }
+
+    .comment-rating ion-icon {
+      font-size: 12px;
+      color: #ddd;
+    }
+
+    .comment-rating ion-icon.filled {
+      color: #ffd700;
+    }
+
+    .comment-text {
+      margin: 0 0 8px 0;
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .comment-date {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .city-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .city-actions ion-button {
+      --border-radius: 8px;
+      height: 48px;
+      font-weight: 500;
     }
 
     /* Footer navigation */
@@ -460,6 +779,10 @@ interface RouteInfo {
       .route-distance {
         font-size: 16px;
       }
+
+      .city-info-section {
+        padding: 16px;
+      }
     }
   `],
   standalone: true,
@@ -481,7 +804,8 @@ interface RouteInfo {
     IonModal,
     IonFooter,
     IonTabBar,
-    IonTabButton
+    IonTabButton,
+    IonBadge
   ]
 })
 export class MapPage implements OnInit, AfterViewInit {
@@ -497,11 +821,13 @@ export class MapPage implements OnInit, AfterViewInit {
   showSearchResults = false;
   showRoutePanel = false;
   showDestinationModal = false;
+  showCityModal = false;
   
   routeStart = 'Ma position';
   routeEnd = '';
   routeMode: 'walking' | 'driving' = 'walking';
   currentRoute?: RouteInfo;
+  selectedCityFromMap?: MapLocation;
 
   locations: MapLocation[] = [
     {
@@ -512,7 +838,10 @@ export class MapPage implements OnInit, AfterViewInit {
       type: 'cite',
       rooms: 28,
       available: 2,
-      rating: 4.5
+      rating: 4.5,
+      distance: '950m',
+      walkTime: '12 minutes',
+      price: 55000
     },
     {
       id: 2,
@@ -522,7 +851,10 @@ export class MapPage implements OnInit, AfterViewInit {
       type: 'cite',
       rooms: 28,
       available: 5,
-      rating: 4.2
+      rating: 4.2,
+      distance: '1.2km',
+      walkTime: '15 minutes',
+      price: 50000
     },
     {
       id: 3,
@@ -532,7 +864,10 @@ export class MapPage implements OnInit, AfterViewInit {
       type: 'cite',
       rooms: 28,
       available: 3,
-      rating: 4.0
+      rating: 4.0,
+      distance: '800m',
+      walkTime: '10 minutes',
+      price: 45000
     },
     {
       id: 4,
@@ -542,7 +877,10 @@ export class MapPage implements OnInit, AfterViewInit {
       type: 'cite',
       rooms: 35,
       available: 1,
-      rating: 4.8
+      rating: 4.8,
+      distance: '1.1km',
+      walkTime: '14 minutes',
+      price: 60000
     },
     {
       id: 5,
@@ -554,6 +892,19 @@ export class MapPage implements OnInit, AfterViewInit {
   ];
 
   searchResults: MapLocation[] = [];
+
+  // Données des commentaires
+  private commentsData = {
+    1: [
+      { author: 'Roy Melvin', rating: 4, text: 'Je ne sais même pas ce que je peux dire sur cette cité, parce que je ne l\'aime pas vraiment.', date: '02/05/2025' },
+      { author: 'Anonyme', rating: 4, text: 'Anonymement, je laisse une bonne note à cette cité pour son libertinage absolu.', date: '01/05/2025' },
+      { author: 'Steves DK', rating: 4, text: 'Entre temps moi je ne suis pas par rapport à cette cité, mais comme on m\'a forcé à venir parler ici...', date: '30/04/2025' }
+    ],
+    2: [
+      { author: 'Marie L.', rating: 5, text: 'Excellente cité, très bien située et sécurisée.', date: '03/05/2025' },
+      { author: 'Paul K.', rating: 3, text: 'Correct mais pourrait être mieux entretenu.', date: '01/05/2025' }
+    ]
+  };
 
   constructor(
     private router: Router,
@@ -572,7 +923,10 @@ export class MapPage implements OnInit, AfterViewInit {
       personOutline,
       carOutline,
       walkOutline,
-      bicycleOutline
+      bicycleOutline,
+      chevronForwardOutline,
+      starOutline,
+      star
     });
   }
 
@@ -641,6 +995,15 @@ export class MapPage implements OnInit, AfterViewInit {
     // Ajout des marqueurs
     this.addMarkersToMap();
     this.updateUserLocationOnMap();
+
+    // Configuration des fonctions globales pour les popups
+    (window as any).selectCiteFromMap = (id: number) => {
+      this.selectCityFromMap(id);
+    };
+
+    (window as any).navigateToCite = (id: number) => {
+      this.calculateRoute(id);
+    };
   }
 
   private addMarkersToMap() {
@@ -651,7 +1014,7 @@ export class MapPage implements OnInit, AfterViewInit {
   }
 
   private createMarker(location: MapLocation): L.Marker {
-    const icon = this.getMarkerIcon(location.type);
+    const icon = this.getMarkerIcon(location.type, location.available);
     const marker = L.marker([location.lat, location.lng], { icon }).addTo(this.map);
 
     // Popup pour les cités
@@ -659,14 +1022,19 @@ export class MapPage implements OnInit, AfterViewInit {
       const popupContent = `
         <div class="marker-popup">
           <h4>${location.name}</h4>
-          <p>${location.rooms} chambres</p>
-          ${location.available ? `<p class="available">${location.available} chambres libres</p>` : ''}
-          <button onclick="window.selectCiteFromMap(${location.id})" class="popup-button">
-            Voir plus
-          </button>
-          <button onclick="window.navigateToCite(${location.id})" class="popup-button route">
-            Itinéraire
-          </button>
+          <div class="popup-rating">
+            <span>⭐ ${location.rating}/5</span>
+            <span>(${location.rooms} chambres)</span>
+          </div>
+          ${location.available ? `<p class="available">🟢 ${location.available} Chambres libres</p>` : ''}
+          <div class="popup-actions">
+            <button onclick="window.selectCiteFromMap(${location.id})" class="popup-button">
+              Voir plus
+            </button>
+            <button onclick="window.navigateToCite(${location.id})" class="popup-button route">
+              Itinéraire
+            </button>
+          </div>
         </div>
       `;
       marker.bindPopup(popupContent);
@@ -677,26 +1045,35 @@ export class MapPage implements OnInit, AfterViewInit {
     return marker;
   }
 
-  private getMarkerIcon(type: string): L.Icon | L.DivIcon {
+  private getMarkerIcon(type: string, available?: number): L.Icon | L.DivIcon {
     let color = '#1dd1a1';
+    let emoji = '🏠';
     
     switch (type) {
       case 'cite':
-        color = '#e91e63'; // Rose pour les cités
+        if (available && available > 0) {
+          color = '#10b981'; // Vert pour disponible
+          emoji = '🟢';
+        } else {
+          color = '#ef4444'; // Rouge pour plein
+          emoji = '🔴';
+        }
         break;
       case 'campus':
         color = '#9e9e9e'; // Gris pour le campus
+        emoji = '⭐';
         break;
       case 'user':
         color = '#2196f3'; // Bleu pour l'utilisateur
+        emoji = '📍';
         break;
     }
 
     return L.divIcon({
       className: 'custom-marker',
-      html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-      iconSize: [20, 20],
-      iconAnchor: [10, 10]
+      html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 12px;">${emoji}</div>`,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
     });
   }
 
@@ -744,7 +1121,7 @@ export class MapPage implements OnInit, AfterViewInit {
     }
   }
 
-  selectLocation(location: MapLocation) {
+  selectLocationFromSearch(location: MapLocation) {
     this.showSearch = false;
     this.showSearchResults = false;
     this.searchTerm = '';
@@ -760,6 +1137,67 @@ export class MapPage implements OnInit, AfterViewInit {
     
     if (marker) {
       marker.openPopup();
+    }
+  }
+
+  selectCityFromMap(id: number) {
+    const city = this.locations.find(l => l.id === id);
+    if (city) {
+      this.selectedCityFromMap = city;
+      this.showCityModal = true;
+    }
+  }
+
+  closeCityModal() {
+    this.showCityModal = false;
+    this.selectedCityFromMap = undefined;
+  }
+
+  getCityImage(id: number): string {
+    const images = {
+      1: 'https://images.pexels.com/photos/466685/pexels-photo-466685.jpeg',
+      2: 'https://images.pexels.com/photos/1370704/pexels-photo-1370704.jpeg',
+      3: 'https://images.pexels.com/photos/1449824/pexels-photo-1449824.jpeg',
+      4: 'https://images.pexels.com/photos/2102587/pexels-photo-2102587.jpeg'
+    };
+    return images[id as keyof typeof images] || images[1];
+  }
+
+  getCityDescription(id: number): string {
+    const descriptions = {
+      1: 'Une cité paisible qui n\'a pas de barrière mais n\'a aucun souci à accueillir les étudiants qui veulent bien y habiter.',
+      2: 'Cité moderne avec toutes les commodités nécessaires pour un séjour confortable.',
+      3: 'Environnement calme et sécurisé, idéal pour les études.',
+      4: 'Cité haut de gamme avec services premium et sécurité renforcée.'
+    };
+    return descriptions[id as keyof typeof descriptions] || descriptions[1];
+  }
+
+  getCommentsCount(id: number): number {
+    return this.commentsData[id as keyof typeof this.commentsData]?.length || 0;
+  }
+
+  getPreviewComments(id: number) {
+    return this.commentsData[id as keyof typeof this.commentsData]?.slice(0, 2) || [];
+  }
+
+  viewAllComments() {
+    // Navigation vers la page de commentaires
+    this.closeCityModal();
+    // Ici vous pourriez naviguer vers une page de commentaires dédiée
+  }
+
+  viewCityDetails() {
+    if (this.selectedCityFromMap) {
+      this.closeCityModal();
+      this.router.navigate(['/city-details', this.selectedCityFromMap.id]);
+    }
+  }
+
+  calculateRouteToCity() {
+    if (this.selectedCityFromMap) {
+      this.closeCityModal();
+      this.calculateRoute(this.selectedCityFromMap.id);
     }
   }
 
@@ -879,24 +1317,3 @@ export class MapPage implements OnInit, AfterViewInit {
     await toast.present();
   }
 }
-
-// Fonctions globales pour les popups
-declare global {
-  interface Window {
-    selectCiteFromMap: (id: number) => void;
-    navigateToCite: (id: number) => void;
-  }
-}
-
-window.selectCiteFromMap = (id: number) => {
-  // Navigation vers les détails de la cité
-  window.location.href = `/city-details/${id}`;
-};
-
-window.navigateToCite = (id: number) => {
-  // Déclencher le calcul d'itinéraire
-  const mapComponent = (window as any).mapComponentInstance;
-  if (mapComponent) {
-    mapComponent.calculateRoute(id);
-  }
-};

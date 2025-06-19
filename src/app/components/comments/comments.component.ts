@@ -15,6 +15,7 @@ import {
   IonAvatar,
   IonButtons,
   IonModal,
+  IonCheckbox,
   ToastController,
   AlertController
 } from '@ionic/angular/standalone';
@@ -24,7 +25,8 @@ import {
   starOutline,
   star,
   sendOutline,
-  personOutline
+  personOutline,
+  chevronBackOutline
 } from 'ionicons/icons';
 
 interface Comment {
@@ -41,12 +43,12 @@ interface Comment {
   template: `
     <ion-header class="ion-no-border">
       <ion-toolbar>
-        <ion-title>Commentaires</ion-title>
         <ion-buttons slot="start">
           <ion-button fill="clear" (click)="closeModal()">
-            <ion-icon name="close-outline" color="medium"></ion-icon>
+            <ion-icon name="chevron-back-outline" color="primary"></ion-icon>
           </ion-button>
         </ion-buttons>
+        <ion-title>Commentaires</ion-title>
       </ion-toolbar>
     </ion-header>
 
@@ -61,7 +63,7 @@ interface Comment {
               </div>
             </ion-avatar>
             <div class="comment-meta">
-              <h4 class="comment-author">{{ comment.anonymous ? 'Anonyme' : comment.author }}</h4>
+              <h4 class="comment-author">~{{ comment.anonymous ? 'Anonyme' : comment.author }}</h4>
               <div class="comment-rating">
                 <ion-icon
                   *ngFor="let i of [1, 2, 3, 4, 5]"
@@ -101,27 +103,26 @@ interface Comment {
               autoGrow="true"
             ></ion-textarea>
           </ion-item>
-
-          <ion-button
-            fill="clear"
-            class="send-button"
-            (click)="submitComment()"
-            [disabled]="!newCommentText.trim() || userRating === 0"
-          >
-            <ion-icon name="send-outline" slot="icon-only"></ion-icon>
-          </ion-button>
         </div>
 
         <div class="comment-options">
-          <label class="anonymous-option">
-            <input
-              type="checkbox"
-              [(ngModel)]="isAnonymous"
-              class="anonymous-checkbox"
-            />
-            <span class="anonymous-label">Publier en anonyme</span>
-          </label>
+          <ion-checkbox
+            [(ngModel)]="isAnonymous"
+            class="anonymous-checkbox"
+          ></ion-checkbox>
+          <span class="anonymous-label">Publier en anonyme</span>
         </div>
+
+        <ion-button
+          expand="block"
+          color="primary"
+          class="submit-button"
+          (click)="submitComment()"
+          [disabled]="!newCommentText.trim() || userRating === 0"
+        >
+          <ion-icon name="send-outline" slot="start"></ion-icon>
+          Envoyer
+        </ion-button>
       </div>
     </ion-content>
   `,
@@ -273,14 +274,10 @@ interface Comment {
     }
 
     .comment-input-container {
-      display: flex;
-      align-items: flex-end;
-      gap: 12px;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
 
     .comment-input {
-      flex: 1;
       --background: #f8f9fa;
       --border-radius: 12px;
       --border-color: var(--border-color);
@@ -299,51 +296,36 @@ interface Comment {
       font-size: 14px;
     }
 
-    .send-button {
-      --color: var(--primary-color);
-      --background: var(--primary-color);
-      --background-activated: #17b890;
-      --border-radius: 50%;
-      width: 48px;
-      height: 48px;
-      margin: 0;
-    }
-
-    .send-button:disabled {
-      --color: var(--text-muted);
-      --background: #f0f0f0;
-    }
-
-    .send-button ion-icon {
-      font-size: 20px;
-      color: white;
-    }
-
-    .send-button:disabled ion-icon {
-      color: var(--text-muted);
-    }
-
     .comment-options {
       display: flex;
       align-items: center;
-    }
-
-    .anonymous-option {
-      display: flex;
-      align-items: center;
       gap: 8px;
-      cursor: pointer;
+      margin-bottom: 16px;
     }
 
     .anonymous-checkbox {
-      width: 16px;
-      height: 16px;
-      accent-color: var(--primary-color);
+      --size: 16px;
+      --checkmark-color: white;
+      --background-checked: var(--primary-color);
+      --border-color-checked: var(--primary-color);
     }
 
     .anonymous-label {
       font-size: 14px;
       color: var(--text-secondary);
+    }
+
+    .submit-button {
+      --border-radius: 12px;
+      --padding-top: 16px;
+      --padding-bottom: 16px;
+      height: 56px;
+      font-weight: 600;
+    }
+
+    .submit-button:disabled {
+      --background: #d1d5db;
+      --color: #9ca3af;
     }
 
     /* Responsive */
@@ -378,7 +360,8 @@ interface Comment {
     IonList,
     IonAvatar,
     IonButtons,
-    IonModal
+    IonModal,
+    IonCheckbox
   ]
 })
 export class CommentsComponent implements OnInit {
@@ -399,7 +382,7 @@ export class CommentsComponent implements OnInit {
       author: 'Anonyme',
       text: 'Anonymement, je laisse une bonne note à cette cité pour son libertinage absolu.',
       rating: 4,
-      date: '02/05/2025',
+      date: '01/05/2025',
       anonymous: true
     },
     {
@@ -407,7 +390,7 @@ export class CommentsComponent implements OnInit {
       author: 'Steves DK',
       text: 'Entre temps moi je ne suis pas par rapport à cette cité, mais comme on m\'a forcé à venir parler ici, et qu\'on m\'a forcé à dire que c\'est une bonne cité, je dis donc que c\'est une très bonne cité.',
       rating: 4,
-      date: '02/05/2025',
+      date: '30/04/2025',
       anonymous: false
     }
   ];
@@ -425,7 +408,8 @@ export class CommentsComponent implements OnInit {
       starOutline,
       star,
       sendOutline,
-      personOutline
+      personOutline,
+      chevronBackOutline
     });
   }
 
@@ -491,6 +475,7 @@ export class CommentsComponent implements OnInit {
   closeModal() {
     // Émettre un événement pour fermer le modal
     // Dans un contexte réel, vous utiliseriez @Output() et EventEmitter
+    window.history.back();
   }
 
   private async showToast(message: string, color: 'success' | 'warning' | 'danger' = 'success') {

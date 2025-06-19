@@ -1,9 +1,7 @@
 import { Routes } from '@angular/router';
-// import { bailleur_routes } from './pages/bailleur/tabs/tabs.routes';
 
 export const routes: Routes = [
-
- // Les routes des interfaces Utilisateur
+  // Les routes des interfaces Utilisateur
   {
     path: '',
     redirectTo: 'landing',
@@ -25,25 +23,23 @@ export const routes: Routes = [
     path: 'home',
     loadComponent: () => import('./pages/Utilisateur/home/home.page').then(m => m.HomePage)
   },
-      {
-        path: 'cities',
-        loadComponent: () => import('./pages/Utilisateur/cities/cities.page').then(m => m.CitiesPage)
-      },
-      {
-        path: 'map',
-        loadComponent: () => import('./pages/Utilisateur/map/map.page').then(m => m.MapPage)
-      },
-      {
-        path: 'profile',
-        loadComponent: () => import('./pages/Utilisateur/profile/profile.page').then(m => m.ProfilePage)
-      },
-
+  {
+    path: 'cities',
+    loadComponent: () => import('./pages/Utilisateur/cities/cities.page').then(m => m.CitiesPage)
+  },
+  {
+    path: 'map',
+    loadComponent: () => import('./pages/Utilisateur/map/map.page').then(m => m.MapPage)
+  },
+  {
+    path: 'profile',
+    loadComponent: () => import('./pages/Utilisateur/profile/profile.page').then(m => m.ProfilePage)
+  },
   {
     path: 'city-details/:id',
     loadComponent: () => import('./pages/Utilisateur/city-details/city-details.page').then(m => m.CityDetailsPage)
   },
-
-{
+  {
     path: 'code-verification',
     loadComponent: () => import('./pages/Utilisateur/Auth/code-verification/code-verification.page').then( m => m.CodeVerificationPage)
   },
@@ -55,7 +51,6 @@ export const routes: Routes = [
     path: 'user-type-selection',
     loadComponent: () => import('./pages/Utilisateur/Auth/user-type-selection/user-type-selection.page').then( m => m.UserTypeSelectionPage)
   },
-
   // Nouvelles routes pour le système de réservation
   {
     path: 'room-selection/:id',
@@ -73,12 +68,13 @@ export const routes: Routes = [
     path: 'reservation-details/:id',
     loadComponent: () => import('./pages/Utilisateur/reservation-details/reservation-details.page').then(m => m.ReservationDetailsPage)
   },
-
-
-
-
-  // Les routes des interfaces du bailleur
-
-
-
+  // Nouvelles routes pour le système cartographique et commentaires
+  {
+    path: 'comments/:id',
+    loadComponent: () => import('./pages/Utilisateur/comments-full/comments-full.page').then(m => m.CommentsFullPage)
+  },
+  {
+    path: 'contract/:id',
+    loadComponent: () => import('./pages/Utilisateur/contract-management/contract-management.page').then(m => m.ContractManagementPage)
+  }
 ];
