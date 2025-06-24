@@ -262,6 +262,7 @@ interface City {
             <button class="see-all-button" (click)="viewAllCities()">
               Voir toutes les cités disponibles
             </button>
+            <br> <br> <br>
 
 
           </div>

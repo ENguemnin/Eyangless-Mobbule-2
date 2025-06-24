@@ -1,0 +1,154 @@
+/* Header */
+ion-header ion-toolbar {
+  --background: white;
+  --color: #333;
+  --border-color: #e0e0e0;
+}
+
+ion-header ion-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-align: center;
+  color: #333;
+}
+
+ion-header ion-buttons ion-button {
+  --color: #26d0ce;
+}
+
+ion-header ion-buttons ion-icon {
+  font-size: 1.5rem;
+  color: #26d0ce;
+}
+
+/* Content */
+.cite-content {
+  --background: #f8f9fa;
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+.form-container {
+  padding: 24px 16px;
+}
+
+/* Section Title */
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 32px 0;
+}
+
+/* Form Groups */
+.form-group {
+  margin-bottom: 32px;
+}
+
+.form-label {
+  display: block;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+/* Form Inputs */
+.form-input {
+  --background: white;
+  --border-radius: 12px;
+  --border-color: #e0e0e0;
+  --border-style: solid;
+  --border-width: 1px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --min-height: 48px;
+  margin: 0;
+}
+
+.form-input ion-input {
+  --placeholder-color: #999;
+  --placeholder-opacity: 1;
+  --color: #333;
+  font-size: 1rem;
+}
+
+/* Textarea */
+.form-textarea {
+  --background: white;
+  --border-radius: 12px;
+  --border-color: #e0e0e0;
+  --border-style: solid;
+  --border-width: 1px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  margin: 0;
+  align-items: flex-start;
+}
+
+.form-textarea ion-textarea {
+  --placeholder-color: #999;
+  --placeholder-opacity: 1;
+  --color: #333;
+  font-size: 1rem;
+  min-height: 120px;
+}
+
+/* Location field */
+.form-location {
+  --background: white;
+  --border-radius: 12px;
+  --border-color: #e0e0e0;
+  --border-style: solid;
+  --border-width: 1px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --min-height: 48px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.location-text {
+  color: #333;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.location-icon {
+  color: #26d0ce;
+  font-size: 1.3rem;
+  margin-left: 8px;
+}
+
+/* Focus states */
+.form-input:focus-within,
+.form-textarea:focus-within,
+.form-location:focus-within {
+  --border-color: #26d0ce;
+  --border-width: 2px;
+}
+
+/* Remove default ionic item styling */
+.form-input::part(native),
+.form-textarea::part(native) {
+  border: none;
+  box-shadow: none;
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .form-container {
+    padding: 20px 12px;
+  }
+
+  .section-title {
+    font-size: 1.2rem;
+    margin-bottom: 24px;
+  }
+
+  .form-group {
+    margin-bottom: 24px;
+  }
+}

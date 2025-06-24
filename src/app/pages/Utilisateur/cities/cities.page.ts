@@ -141,7 +141,7 @@ interface City {
           <h3>Résultats de la recherche</h3>
         </div>
         <ion-list class="search-results-list">
-          <ion-item 
+          <ion-item
             *ngFor="let city of searchResults; trackBy: trackByCity"
             button
             (click)="selectCity(city)"
@@ -170,7 +170,7 @@ interface City {
       <!-- Liste des cités -->
       <div class="cities-list" *ngIf="!showSearch || (!showSearchResults && !searchTerm)">
         <ion-list class="cities-main-list">
-          <div 
+          <div
             *ngFor="let city of filteredCities; trackBy: trackByCity"
             class="city-card-container"
           >
@@ -183,8 +183,8 @@ interface City {
                     <span>{{ city.rating }}</span>
                   </div>
                   <div class="city-status" *ngIf="city.status.length > 0">
-                    <ion-chip 
-                      *ngFor="let status of city.status.slice(0, 1)" 
+                    <ion-chip
+                      *ngFor="let status of city.status.slice(0, 1)"
                       [color]="getStatusColor(status)"
                       size="small"
                     >
@@ -193,7 +193,7 @@ interface City {
                   </div>
                 </div>
               </div>
-              
+
               <ion-card-content class="city-info">
                 <div class="city-header">
                   <h3>{{ city.name }}</h3>
@@ -312,7 +312,7 @@ interface City {
 
     .custom-segment ion-segment-button {
       --color: var(--text-muted);
-      --color-checked: white;
+      --color-checked: black;
       --background-checked: var(--primary-color);
       --border-radius: 8px;
       font-size: 14px;
@@ -404,7 +404,7 @@ interface City {
 
     /* Liste des cités */
     .cities-list {
-      background: #f8f9fa;
+      background:rgb(255, 255, 255);
       min-height: calc(100vh - 200px);
     }
 

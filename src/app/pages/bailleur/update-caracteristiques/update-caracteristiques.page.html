@@ -1,0 +1,253 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back" color="primary"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <ion-title>Caractéristiques</ion-title>
+
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="saveCharacteristics()">
+        <ion-icon name="checkmark" color="primary"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="characteristics-content">
+  <div class="form-container">
+    <div class="section-header" (click)="toggleSection('general')">
+      <h2 class="section-title">Général</h2>
+      <ion-icon
+        [name]="sectionExpanded.general ? 'chevron-up' : 'chevron-down'"
+        class="section-icon">
+      </ion-icon>
+    </div>
+
+    <div class="section-content" [class.expanded]="sectionExpanded.general">
+      <div class="form-group">
+        <ion-label class="form-label">Nombre d'étages</ion-label>
+        <ion-item class="form-input">
+          <ion-input
+            placeholder="Ex: 3"
+            [(ngModel)]="nombreEtages"
+            type="number">
+          </ion-input>
+        </ion-item>
+      </div>
+
+      <div class="form-group">
+        <ion-label class="form-label">Nombre de chambres</ion-label>
+        <ion-item class="form-input">
+          <ion-input
+            placeholder="Ex: 26"
+            [(ngModel)]="nombreChambres"
+            type="number">
+          </ion-input>
+        </ion-item>
+      </div>
+
+      <div class="form-group">
+        <ion-label class="form-label">Taille par chambre (en m²)</ion-label>
+        <ion-item class="form-input">
+          <ion-input
+            placeholder="Ex: 10"
+            [(ngModel)]="tailleParChambre"
+            type="number">
+          </ion-input>
+        </ion-item>
+      </div>
+
+      <div class="form-group">
+        <ion-label class="form-label">Prix d'une chambre</ion-label>
+        <ion-item class="form-input">
+          <ion-input
+            placeholder="Ex: 50000"
+            [(ngModel)]="prixChambre"
+            type="number">
+          </ion-input>
+        </ion-item>
+      </div>
+
+      <div class="form-group">
+        <ion-label class="form-label">Durée du bail (en mois)</ion-label>
+        <ion-item class="form-input">
+          <ion-input
+            placeholder="Ex: 12"
+            [(ngModel)]="dureeBail"
+            type="number">
+          </ion-input>
+        </ion-item>
+      </div>
+
+      <div class="form-group">
+        <ion-label class="form-label">Caution (en mois)</ion-label>
+        <ion-item class="form-input">
+          <ion-input
+            placeholder="Ex: 1"
+            [(ngModel)]="caution"
+            type="number">
+          </ion-input>
+        </ion-item>
+      </div>
+    </div>
+
+    <div class="section-header" (click)="toggleSection('financieres')">
+      <h2 class="section-title">Caractéristiques financières</h2>
+      <ion-icon
+        [name]="sectionExpanded.financieres ? 'chevron-up' : 'chevron-down'"
+        class="section-icon">
+      </ion-icon>
+    </div>
+
+    <div class="section-content" [class.expanded]="sectionExpanded.financieres">
+      <div class="form-group">
+        <ion-label class="form-label">Banque</ion-label>
+        <ion-item class="form-input">
+          <ion-input
+            placeholder="Ex: UBA"
+            [(ngModel)]="banque"
+            type="text">
+          </ion-input>
+        </ion-item>
+      </div>
+
+      <div class="form-group">
+        <ion-label class="form-label">Numéro de compte</ion-label>
+        <ion-item class="form-input">
+          <ion-input
+            placeholder="Ex: 1083 9829 3793 9828 00 232"
+            [(ngModel)]="numeroCompte"
+            type="text">
+          </ion-input>
+        </ion-item>
+      </div>
+    </div>
+
+    <div class="section-header" (click)="toggleSection('autres')">
+      <h2 class="section-title">Autres caractéristiques</h2>
+      <ion-icon
+        [name]="sectionExpanded.autres ? 'chevron-up' : 'chevron-down'"
+        class="section-icon">
+      </ion-icon>
+    </div>
+
+    <div class="section-content" [class.expanded]="sectionExpanded.autres">
+      <div class="form-group">
+        <ion-label class="form-label">Eau</ion-label>
+        <ion-item class="form-select" button (click)="openEauSelect()">
+          <ion-label class="select-text">{{ eauSelected || 'Sélectionner' }}</ion-label>
+          <ion-icon name="chevron-down" slot="end" class="select-icon"></ion-icon>
+        </ion-item>
+      </div>
+
+      <div class="form-group">
+        <ion-label class="form-label">Electricité</ion-label>
+        <ion-item class="form-select" button (click)="openElectriciteSelect()">
+          <ion-label class="select-text">{{ electriciteSelected || 'Sélectionner' }}</ion-label>
+          <ion-icon name="chevron-down" slot="end" class="select-icon"></ion-icon>
+        </ion-item>
+      </div>
+
+      <div class="form-group toggle-group">
+        <div class="toggle-item">
+          <ion-label class="toggle-label">Groupe électrogène</ion-label>
+          <ion-toggle
+            [(ngModel)]="groupeElectrogene"
+            color="primary">
+          </ion-toggle>
+        </div>
+      </div>
+
+      <div class="form-group toggle-group">
+        <div class="toggle-item">
+          <ion-label class="toggle-label">Forage</ion-label>
+          <ion-toggle
+            [(ngModel)]="forage"
+            color="primary">
+          </ion-toggle>
+        </div>
+      </div>
+
+      <div class="form-group toggle-group">
+        <div class="toggle-item">
+          <ion-label class="toggle-label">Gardien</ion-label>
+          <ion-toggle
+            [(ngModel)]="gardien"
+            color="primary">
+          </ion-toggle>
+        </div>
+      </div>
+
+      <div class="form-group toggle-group">
+        <div class="toggle-item">
+          <ion-label class="toggle-label">Concierge</ion-label>
+          <ion-toggle
+            [(ngModel)]="concierge"
+            color="primary">
+          </ion-toggle>
+        </div>
+      </div>
+
+      <div class="form-group toggle-group">
+        <div class="toggle-item">
+          <ion-label class="toggle-label">Barrière</ion-label>
+          <ion-toggle
+            [(ngModel)]="barriere"
+            color="primary">
+          </ion-toggle>
+        </div>
+      </div>
+
+      <div class="form-group toggle-group">
+        <div class="toggle-item">
+          <ion-label class="toggle-label">Couvre-feu</ion-label>
+          <ion-toggle
+            [(ngModel)]="couvreFeu"
+            color="primary">
+          </ion-toggle>
+        </div>
+      </div>
+
+      <div class="form-group" *ngIf="couvreFeu">
+        <ion-label class="form-label">Heure du couvre-feu</ion-label>
+        <ion-item class="form-input time-input" button (click)="openTimePicker()">
+          <ion-label class="time-text">{{ heureCouvrefeu || '18:00' }}</ion-label>
+          <ion-icon name="time" slot="end" class="time-icon"></ion-icon>
+        </ion-item>
+      </div>
+
+      <!-- Caractéristiques personnalisées -->
+      <div class="custom-characteristics" *ngIf="customCharacteristics.length > 0">
+        <div class="form-group toggle-group" *ngFor="let characteristic of customCharacteristics">
+          <div class="toggle-item">
+            <ion-label class="toggle-label">{{ characteristic.label }}</ion-label>
+            <ion-toggle
+              [(ngModel)]="characteristic.value"
+              color="primary">
+            </ion-toggle>
+            <ion-button
+              fill="clear"
+              size="small"
+              color="danger"
+              (click)="removeCustomCharacteristic(characteristic.id)">
+              <ion-icon name="trash" slot="icon-only"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bouton fixe en bas -->
+  <div class="fixed-bottom-button">
+    <ion-button
+      expand="block"
+      color="primary"
+      (click)="addCustomCharacteristic()">
+      Ajouter une caractéristique
+    </ion-button>
+  </div>
+</ion-content>

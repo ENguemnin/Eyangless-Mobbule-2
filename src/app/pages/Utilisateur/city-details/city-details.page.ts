@@ -395,8 +395,8 @@ interface CityDetail {
     <!-- Modal Commentaires -->
     <ion-modal [isOpen]="showCommentsModal" (didDismiss)="closeCommentsModal()">
       <ng-template>
-        <app-comments 
-          [cityId]="city?.id" 
+        <app-comments
+          [cityId]="city?.id"
           [isOpen]="showCommentsModal"
           (close)="closeCommentsModal()">
         </app-comments>
@@ -436,7 +436,7 @@ interface CityDetail {
 
         ion-segment-button {
           --color: #666;
-          --color-checked: var(--primary-color);
+          --color-checked: white;
           --indicator-color: var(--primary-color);
           text-transform: none;
           font-weight: 500;

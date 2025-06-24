@@ -1,0 +1,156 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back" color="primary"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Contacts</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="saveContacts()">
+        <ion-icon name="checkmark" color="primary"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="contacts-content">
+  <div class="content-wrapper">
+    <!-- Section Liste des contacts -->
+    <div class="section-header">
+      <h2>Liste des contacts</h2>
+    </div>
+
+    <!-- Liste des contacts -->
+    <div class="contacts-list" *ngIf="contacts.length > 0">
+      <div class="contact-item" *ngFor="let contact of contacts">
+        <div class="contact-info">
+          <h3 class="contact-name">{{ contact.name }}</h3>
+          <div class="contact-details">
+            <div class="contact-detail" *ngIf="contact.email">
+              <ion-icon name="mail" class="detail-icon"></ion-icon>
+              <span class="detail-text">{{ contact.email }}</span>
+            </div>
+            <div class="contact-detail" *ngIf="contact.phone">
+              <ion-icon name="call" class="detail-icon"></ion-icon>
+              <span class="detail-text">{{ contact.phone }}</span>
+            </div>
+            <div class="contact-role" *ngIf="contact.role">
+              <span class="role-text">{{ contact.role }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="contact-actions">
+          <ion-button
+            fill="clear"
+            size="small"
+            color="danger"
+            (click)="removeContact(contact.id)">
+            <ion-icon name="close-circle" slot="icon-only"></ion-icon>
+          </ion-button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message si aucun contact -->
+    <div class="empty-state" *ngIf="contacts.length === 0">
+      <ion-icon name="people-outline" class="empty-icon"></ion-icon>
+      <p class="empty-message">Aucun contact ajouté</p>
+    </div>
+  </div>
+
+  <!-- Bouton fixe en bas -->
+  <div class="fixed-bottom-button">
+    <ion-button
+      expand="block"
+      class="custom-button"
+      (click)="openAddContactModal()">
+      Ajouter un contact
+    </ion-button>
+  </div>
+</ion-content>
+
+<!-- Modal d'ajout de contact -->
+<ion-modal [isOpen]="isAddContactModalOpen" (didDismiss)="closeAddContactModal()">
+  <ng-template>
+    <div class="modal-content">
+      <!-- Header du modal -->
+      <div class="modal-header">
+        <h2 class="modal-title">Ajouter un contact</h2>
+        <ion-button
+          fill="clear"
+          size="small"
+          color="danger"
+          (click)="closeAddContactModal()">
+          <ion-icon name="close-circle" slot="icon-only"></ion-icon>
+        </ion-button>
+      </div>
+
+      <!-- Formulaire -->
+      <div class="modal-form">
+        <!-- Nom du contact -->
+        <div class="form-group">
+          <label class="form-label">Nom du contact</label>
+          <ion-input
+            [(ngModel)]="newContact.name"
+            placeholder="Entrer le nom du contact"
+            class="custom-input"
+            fill="outline">
+          </ion-input>
+        </div>
+
+        <!-- Rôle du contact -->
+        <div class="form-group">
+          <label class="form-label">Rôle du contact</label>
+          <ion-input
+            [(ngModel)]="newContact.role"
+            placeholder="Entrer le rôle du contact"
+            class="custom-input"
+            fill="outline">
+          </ion-input>
+        </div>
+
+        <!-- Adresse mail -->
+        <div class="form-group">
+          <label class="form-label">Adresse mail</label>
+          <ion-input
+            [(ngModel)]="newContact.email"
+            type="email"
+            placeholder="Entrer l'adresse mail"
+            class="custom-input"
+            fill="outline">
+          </ion-input>
+        </div>
+
+        <!-- Numéro de téléphone -->
+        <div class="form-group">
+          <label class="form-label">Numéro de téléphone</label>
+          <ion-input
+            [(ngModel)]="newContact.phone"
+            type="tel"
+            placeholder="Entrer le numéro de téléphone"
+            class="custom-input"
+            fill="outline">
+          </ion-input>
+        </div>
+      </div>
+
+      <!-- Boutons du modal -->
+      <div class="modal-buttons">
+        <ion-button
+          fill="outline"
+          color="medium"
+          expand="block"
+          (click)="closeAddContactModal()">
+          Annuler
+        </ion-button>
+        <ion-button
+          expand="block"
+          class="custom-button"
+          (click)="addContact()">
+          Ajouter
+        </ion-button>
+      </div>
+    </div>
+  </ng-template>
+</ion-modal>
