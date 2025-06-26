@@ -1,3 +1,4 @@
+import { AuthService } from './../../../../services/auth/auth.service';
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -9,9 +10,11 @@ import {
   IonTitle,
   IonIcon,
   IonButton,
+  AlertController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { chevronBackOutline } from 'ionicons/icons';
+import { chevronBackOutline, mail } from 'ionicons/icons';
+import { User } from 'src/app/models/user';
 
 @Component({
   selector: 'app-phone-verification',
@@ -37,21 +40,22 @@ import { chevronBackOutline } from 'ionicons/icons';
         <!-- Contenu principal -->
         <div class="main-content">
           <p class="instruction-text">
-            Veuillez entrer votre numéro de téléphone pour recevoir le code de
+            Veuillez entrer de nouveau votre email pour recevoir le code de
             vérification.
           </p>
 
           <form (ngSubmit)="sendVerificationCode()" class="phone-form">
             <!-- Champ numéro de téléphone -->
             <div class="phone-input-container">
-              <div class="country-code">+237</div>
+              <div class="country-code">
+                <ion-icon name="mail"></ion-icon>
+              </div>
               <input
                 type="tel"
-                placeholder="Numéro de téléphone"
-                [(ngModel)]="phoneNumber"
-                name="phoneNumber"
+                placeholder="Email"
+                [(ngModel)]="email"
+                name="email"
                 class="phone-input"
-                maxlength="9"
               />
             </div>
 
@@ -59,7 +63,7 @@ import { chevronBackOutline } from 'ionicons/icons';
             <button
               type="submit"
               class="done-button"
-              [disabled]="!phoneNumber || phoneNumber.length < 9"
+              [disabled]="!email || email.length < 9"
             >
               Terminé
             </button>
@@ -292,15 +296,55 @@ import { chevronBackOutline } from 'ionicons/icons';
   ],
 })
 export class PhoneVerificationPage {
-  phoneNumber: string = '';
+  email: string = '';
 
-  constructor(private router: Router, private location: Location) {
-    addIcons({ chevronBackOutline });
+  constructor(private router: Router, private location: Location,
+    private authService: AuthService,
+    private alertCtrl: AlertController
+  ) {
+    addIcons({ chevronBackOutline, mail });
   }
 
   sendVerificationCode() {
-    if (this.phoneNumber && this.phoneNumber.length >= 9) {
-      console.log('Code de vérification envoyé au:', '+237' + this.phoneNumber);
+    if (this.email && this.email.length >= 9) {
+      console.log('Code de vérification envoyé à :', this.email);
+
+      let tempUser = JSON.parse(JSON.parse(JSON.stringify(localStorage.getItem('temp-user'))));
+      let user: User = {
+        nom: tempUser.nom,
+        prenom: tempUser.prenom,
+        email: tempUser.email,
+        password: tempUser.password,
+        telephone: tempUser.telephone
+      }
+      console.log(user);
+      
+      if(tempUser.type == "bailleur"){
+        this.authService.addBailleur(user).subscribe({
+          next: (response : any) => {
+            console.log("Bailleur enregistré avec succès", response);
+          },
+          error: (err) => {
+            console.error("Pas moyen d'enregistrer le bailleur", err);
+          }
+        })
+      }else if (tempUser.type == "locataire"){
+        this.authService.addLocataire(user).subscribe({
+          next: (response: any) => {
+            console.log("Locataire enregistrée avec succès", response);
+          },
+          error: (err) => {
+            console.error("Pas moyen d'enregsitrer le locataire", err);
+          }
+        })
+      }else{
+        this.showAlert("Erreur", "Une erreur est survenue.");
+        return
+      }
+
+      localStorage.setItem("email", this.email);
+
+      this.showAlert("Information", "Veuillez consulter votre boît mail pour récupérer le code OTP");
 
       // Navigation vers la page de vérification du code
       this.router.navigate(['/code-verification']);
@@ -309,5 +353,15 @@ export class PhoneVerificationPage {
 
   goBack() {
     this.location.back();
+  }
+
+  async showAlert(header: string, message: string){
+    const alert = await this.alertCtrl.create({
+      header: header,
+      message: message,
+      buttons: ['Ok']
+    });
+
+    await alert.present();
   }
 }

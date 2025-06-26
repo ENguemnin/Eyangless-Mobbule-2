@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { bailleur_routes } from './pages/bailleur/tabs/tabs.routes';
+import { utilisateur_routes } from './pages/Utilisateur/tabs/tabs.routes';
 
 export const routes: Routes = [
 
@@ -25,25 +26,25 @@ export const routes: Routes = [
     path: 'home',
     loadComponent: () => import('./pages/Utilisateur/home/home.page').then(m => m.HomePage)
   },
-      {
-        path: 'cities',
-        loadComponent: () => import('./pages/Utilisateur/cities/cities.page').then(m => m.CitiesPage)
-      },
-      {
-        path: 'map',
-        loadComponent: () => import('./pages/Utilisateur/map/map.page').then(m => m.MapPage)
-      },
-      {
-        path: 'profile',
-        loadComponent: () => import('./pages/Utilisateur/profile/profile.page').then(m => m.ProfilePage)
-      },
+  {
+    path: 'cities',
+    loadComponent: () => import('./pages/Utilisateur/cities/cities.page').then(m => m.CitiesPage)
+  },
+  {
+    path: 'map',
+    loadComponent: () => import('./pages/Utilisateur/map/map.page').then(m => m.MapPage)
+  },
+  {
+    path: 'profile',
+    loadComponent: () => import('./pages/Utilisateur/profile/profile.page').then(m => m.ProfilePage)
+  },
 
   {
     path: 'city-details/:id',
     loadComponent: () => import('./pages/Utilisateur/city-details/city-details.page').then(m => m.CityDetailsPage)
   },
 
-{
+  {
     path: 'code-verification',
     loadComponent: () => import('./pages/Utilisateur/Auth/code-verification/code-verification.page').then( m => m.CodeVerificationPage)
   },
@@ -54,6 +55,11 @@ export const routes: Routes = [
   {
     path: 'user-type-selection',
     loadComponent: () => import('./pages/Utilisateur/Auth/user-type-selection/user-type-selection.page').then( m => m.UserTypeSelectionPage)
+  },
+  {
+    path: 'user',
+    loadComponent: () => import('./pages/Utilisateur/tabs/tabs.page').then((m) => m.TabsPage),
+    children: utilisateur_routes
   },
 
   // Nouvelles routes pour le système de réservation

@@ -11,6 +11,9 @@ import { Location } from '@angular/common';
 import { IonContent, IonIcon, IonButton } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { chevronBackOutline } from 'ionicons/icons';
+import { AuthService } from 'src/app/services/auth/auth.service';
+import { HttpErrorResponse } from '@angular/common/http';
+import { AlertController } from '@ionic/angular';
 
 @Component({
   selector: 'app-code-verification',
@@ -323,7 +326,10 @@ export class CodeVerificationPage implements OnInit, OnDestroy {
   timeRemaining: number = 45; // 45 secondes
   private timer: any;
 
-  constructor(private router: Router, private location: Location) {
+  constructor(private router: Router, private location: Location,
+    private authService: AuthService,
+    private alertCtrl: AlertController
+  ) {
     addIcons({ chevronBackOutline });
   }
 
@@ -440,13 +446,45 @@ export class CodeVerificationPage implements OnInit, OnDestroy {
 
   verifyCode() {
     const code = this.verificationCode.join('');
+
     if (code.length === 6) {
       // Logique de vérification du code
       console.log('Code à vérifier:', code);
 
+      let email: any = localStorage.getItem("email");
+
+      this.authService.verifyOTP(email, code).subscribe({
+        next: (response: any) => {
+            // Si la réponse arrive ici (JSON valide)
+            console.log("Succès:", response);
+            this.showAlert("Compte activé", "Votre compte vient d'être activé avec succès !");
+            this.router.navigate(['/home']);
+        },
+        error: (err: HttpErrorResponse) => {
+            if (err.status === 200) {
+                // Le serveur a répondu avec du texte brut
+                console.log("Succès:", err.error.text); // "Compte activé avec succès"
+                this.router.navigate(['/home']);
+            } else {
+                // Vraie erreur
+                console.error("Erreur:", err);
+            }
+        }
+    });
+
       // Simuler une vérification réussie
       // En cas de succès, naviguer vers la page de sélection du type d'utilisateur
-      this.router.navigate(['/login']);
+
     }
+  }
+
+  async showAlert(header: string, message: string){
+    const alert = await this.alertCtrl.create({
+      header: header,
+      message: message,
+      buttons: ['Ok']
+    });
+
+    await alert.present();
   }
 }

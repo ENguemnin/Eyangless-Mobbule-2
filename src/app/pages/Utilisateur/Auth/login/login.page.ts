@@ -11,6 +11,8 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { mailOutline, lockClosedOutline, eyeOutline, eyeOffOutline } from 'ionicons/icons';
+import { AuthService } from 'src/app/services/auth/auth.service';
+import { AlertController } from '@ionic/angular';
 
 @Component({
   selector: 'app-login',
@@ -167,6 +169,7 @@ import { mailOutline, lockClosedOutline, eyeOutline, eyeOffOutline } from 'ionic
     .header-text {
       text-align: center;
       margin-bottom: 28px;
+      padding: 10px 20px;
     }
     .main-title {
       font-size: 28px;
@@ -201,6 +204,7 @@ import { mailOutline, lockClosedOutline, eyeOutline, eyeOffOutline } from 'ionic
       display: flex;
       flex-direction: column;
       gap: 22px;
+      padding: 0px 20px;
     }
 
     .input-group {
@@ -374,7 +378,10 @@ export class LoginPage {
   password: string = '';
   showPassword: boolean = false;
 
-  constructor(private router: Router) {
+  constructor(private router: Router,
+    private authService: AuthService,
+    private alertCtrl: AlertController
+  ) {
     addIcons({ mailOutline, lockClosedOutline, eyeOutline, eyeOffOutline });
   }
 
@@ -383,12 +390,33 @@ export class LoginPage {
   }
 
   login() {
-    // Navigation vers la page home après connexion
-    this.router.navigate(['/home']);
+    this.authService.login(this.email, this.password).subscribe({
+      next: (response: any ) => {
+        // Connexion réussie
+        console.log('Connexion réussie', response);
+        this.router.navigate(['/home']);
+      },
+      error: (err) => {
+        // Échec de la connexion
+        console.error('Échec de la connexion', err);
+        this.showAlert("Erreur", "Veuiller vérifier vos informations");
+      }
+    });
   }
 
   navigateToRegister(event: Event) {
     event.preventDefault();
     this.router.navigate(['/register']);
+  }
+
+
+  async showAlert(header: string, message: string){
+    const alert = await this.alertCtrl.create({
+      header: header,
+      message: message,
+      buttons: ['Ok']
+    });
+
+    await alert.present();
   }
 }

@@ -272,7 +272,7 @@ interface City {
     </ion-app>
 
     <!-- Footer avec navigation fixé en bas -->
-    <ion-footer class="ion-no-border fixed-footer">
+    <!-- <ion-footer class="ion-no-border fixed-footer">
       <ion-tab-bar class="custom-tab-bar">
         <ion-tab-button  class="active" [class.active]="isActive('/home')" (click)="navigateTo('/home')">
           <ion-icon name="home-outline"></ion-icon>
@@ -294,7 +294,7 @@ interface City {
           <ion-label>Mon compte</ion-label>
         </ion-tab-button>
       </ion-tab-bar>
-    </ion-footer>
+    </ion-footer> -->
   `,
   styles: [
     `

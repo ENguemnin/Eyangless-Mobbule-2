@@ -181,7 +181,7 @@ import { chevronBackOutline } from 'ionicons/icons';
         border-radius: 12px;
       }
 
-      
+
 
       /* Contenu principal */
       .main-content {
@@ -383,6 +383,7 @@ export class UserTypeSelectionPage implements OnInit {
 
   ngOnInit() {
     // Initialisation du composant
+    return
   }
 
   goBack() {
@@ -396,6 +397,9 @@ export class UserTypeSelectionPage implements OnInit {
   continue() {
     if (this.selectedUserType) {
       console.log("Type d'utilisateur sélectionné:", this.selectedUserType);
+      let user = JSON.parse(JSON.parse(JSON.stringify(localStorage.getItem('temp-user'))));
+      user.type = this.selectedUserType;
+      localStorage.setItem('temp-user', JSON.stringify(user));
 
       // Navigation vers la page de vérification du téléphone
       this.router.navigate(['/phone-verification']);

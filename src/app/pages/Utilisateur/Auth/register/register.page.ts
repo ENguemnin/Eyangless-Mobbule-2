@@ -16,7 +16,11 @@ import {
   lockClosedOutline,
   eyeOutline,
   eyeOffOutline,
+  phonePortraitOutline,
 } from 'ionicons/icons';
+import { AuthService } from 'src/app/services/auth/auth.service';
+import { AlertController } from '@ionic/angular';
+import { User } from 'src/app/models/user';
 
 @Component({
   selector: 'app-register',
@@ -68,6 +72,21 @@ import {
             </div>
           </div>
 
+          <!-- Téléphone -->
+          <div class="input-group">
+            <label>Téléphone</label>
+            <div class="input-container">
+              <input
+                type="number"
+                placeholder="Entrez votre numéro de téléphone"
+                [(ngModel)]="telephone"
+                name="telephone"
+                class="custom-input"
+              />
+              <ion-icon name="phone-portrait-outline" class="input-icon"></ion-icon>
+            </div>
+          </div>
+
           <!-- Email -->
           <div class="input-group">
             <label>Adresse email</label>
@@ -81,7 +100,15 @@ import {
               />
               <ion-icon name="mail-outline" class="input-icon"></ion-icon>
             </div>
+              <span class="indicator">
+                @if(displayEmailMessage){
+                  {{ emailMessage }}
+                }
+              </span>
+
           </div>
+
+
 
           <!-- Mot de passe -->
           <div class="input-group">
@@ -113,6 +140,7 @@ import {
                 [(ngModel)]="confirmPassword"
                 name="confirmPassword"
                 class="custom-input"
+                (input)="checkPasswords()"
               />
               <ion-icon
                 [name]="showConfirmPassword ? 'eye-off-outline' : 'eye-outline'"
@@ -121,6 +149,11 @@ import {
               >
               </ion-icon>
             </div>
+            <span class="indicator">
+                @if(displayPasswordMessage){
+                  Les mots de passe sont différents
+                }
+              </span>
           </div>
 
           <!-- Bouton Suivant -->
@@ -137,6 +170,12 @@ import {
   `,
   styles: [
     `
+      .indicator{
+        font-size: 0.7em;
+        color: red;
+        display: block;
+        height: 20px;
+      }
       .register-content {
         --background: #ffffff;
       }
@@ -351,19 +390,27 @@ import {
 export class RegisterPage {
   lastName: string = '';
   firstName: string = '';
+  telephone: string = '';
   email: string = '';
   password: string = '';
   confirmPassword: string = '';
   showPassword: boolean = false;
   showConfirmPassword: boolean = false;
+  emailMessage: string = "lol dude";
+  displayEmailMessage: boolean = false;
+  displayPasswordMessage: boolean = false;
 
-  constructor(private router: Router) {
+  constructor(private router: Router,
+    private authService: AuthService,
+    private alertCtrl: AlertController
+  ) {
     addIcons({
       personOutline,
       mailOutline,
       lockClosedOutline,
       eyeOutline,
       eyeOffOutline,
+      phonePortraitOutline
     });
   }
 
@@ -374,9 +421,11 @@ export class RegisterPage {
       !this.firstName ||
       !this.email ||
       !this.password ||
-      !this.confirmPassword
+      !this.confirmPassword ||
+      !this.telephone
     ) {
-      console.log('Veuillez remplir tous les champs');
+      // console.log('Veuillez remplir tous les champs');
+      this.showAlert("Champs vides", "Veuillez remplir tous les champs")
       return;
     }
 
@@ -386,10 +435,30 @@ export class RegisterPage {
     }
 
     // Logique d'inscription ici
-    console.log('Inscription réussie');
+    this.authService.checkExistingEmail(this.email).subscribe({
+      next: (response) => {
+        if(response != null){
+          this.showAlert("Email déjà pris", 'Cet email est déjà utilisé');
+          return
+        }else{
+          const user: any = {
+            nom: this.firstName,
+            prenom: this.lastName,
+            telephone: this.telephone,
+            email: this.email,
+            password: this.password
+          }
+          localStorage.setItem("temp-user", JSON.stringify(user));
+          console.log('1ère étape réussie');
+          console.log(user);
 
-    // Navigation vers la page de vérification du numéro de téléphone
-    this.router.navigate(['/user-type-selection']);
+          // Navigation vers la page de vérification du numéro de téléphone
+          this.router.navigate(['/user-type-selection']);
+        }
+      }
+    })
+
+
   }
 
   navigateToLogin() {
@@ -402,5 +471,39 @@ export class RegisterPage {
 
   toggleConfirmPassword() {
     this.showConfirmPassword = !this.showConfirmPassword;
+  }
+
+  checkExistingEmail(){
+    this.authService.checkExistingEmail(this.email).subscribe({
+      next: (response) => {
+        if(response != null){
+          this.displayEmailMessage = true;
+          this.emailMessage = "Email déjà utilisé";
+        }else{
+          this.displayEmailMessage = false;
+          this.emailMessage = "";
+        }
+      },
+      error: (err) => {
+        console.error("Erreur lors de la vérification de l'email", err);
+      }
+    });
+  }
+
+  checkPasswords(){
+    if(this.password != this.confirmPassword)
+      this.displayPasswordMessage = true;
+    else
+      this.displayPasswordMessage = false;
+  }
+
+  async showAlert(header: string, message: string){
+    const alert = await this.alertCtrl.create({
+      header: header,
+      message: message,
+      buttons: ['Ok']
+    });
+
+    await alert.present();
   }
 }
