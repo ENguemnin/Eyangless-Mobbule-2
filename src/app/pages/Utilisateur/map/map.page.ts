@@ -1,7 +1,7 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import {
   IonContent,
   IonHeader,
@@ -20,9 +20,9 @@ import {
   IonTabBar,
   IonTabButton,
   IonBadge,
+  ToastController,
   AlertController,
-  LoadingController,
-  ToastController
+  LoadingController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -39,15 +39,22 @@ import {
   bicycleOutline,
   chevronForwardOutline,
   starOutline,
-  star
+  star,
+  trainOutline,
+  mapOutline
 } from 'ionicons/icons';
 import * as L from 'leaflet';
 
 interface MapLocation {
   id: number;
-  name: string;
-  lat: number;
-  lng: number;
+  nom: string;
+  categorie: {
+    nom: string;
+  };
+  adresses: Array<{
+    latitude: number;
+    longitude: number;
+  }>;
   type: 'cite' | 'campus' | 'user';
   rooms?: number;
   available?: number;
@@ -58,223 +65,91 @@ interface MapLocation {
   price?: number;
 }
 
-interface RouteInfo {
-  distance: string;
-  duration: string;
-  coordinates: [number, number][];
+interface DurationInfo {
+  value: string;
+  calculated: boolean;
 }
 
 @Component({
   selector: 'app-map',
   template: `
-    <ion-header class="ion-no-border">
-      <ion-toolbar>
-        <ion-buttons slot="start">
-          <ion-menu-button color="primary"></ion-menu-button>
-        </ion-buttons>
-        <ion-title>Carte</ion-title>
-        <ion-buttons slot="end">
-          <ion-button fill="clear" color="primary" (click)="toggleSearch()">
-            <ion-icon slot="icon-only" [name]="showSearch ? 'close-outline' : 'search-outline'"></ion-icon>
-          </ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
-
     <ion-content>
-      <!-- Barre de recherche -->
-      <div class="search-container" [class.active]="showSearch">
-        <ion-searchbar
-          [(ngModel)]="searchTerm"
-          (ionInput)="onSearch($event)"
-          placeholder="Rechercher une cité..."
-          debounce="300"
-          show-clear-button="focus"
-          class="custom-searchbar"
-        ></ion-searchbar>
-      </div>
-
-      <!-- Résultats de recherche -->
-      <div class="search-results" *ngIf="showSearchResults && searchResults.length > 0">
-        <div class="results-header">
-          <h3>Résultats de la recherche</h3>
-        </div>
-        <ion-list class="search-results-list">
-          <ion-item 
-            *ngFor="let location of searchResults"
-            button
-            (click)="selectLocationFromSearch(location)"
-            class="search-result-item"
-          >
-            <div class="search-result-content">
-              <h4>{{ location.name }}</h4>
-              <p *ngIf="location.rooms">{{ location.rooms }} chambres</p>
-              <p class="distance" *ngIf="location.distance">{{ location.distance }}</p>
-            </div>
-            <ion-icon name="chevron-forward-outline" slot="end" color="primary"></ion-icon>
-          </ion-item>
-        </ion-list>
-      </div>
-
-      <!-- Carte -->
-      <div #mapContainer class="map-container" [class.with-search]="showSearch"></div>
-
-      <!-- Panneau d'itinéraire -->
-      <div class="route-panel" *ngIf="showRoutePanel">
-        <div class="route-header">
-          <div class="route-points">
-            <div class="route-point">
-              <div class="point-icon start"></div>
-              <span>{{ routeStart }}</span>
-            </div>
-            <div class="route-line"></div>
-            <div class="route-point">
-              <div class="point-icon end"></div>
-              <span>{{ routeEnd }}</span>
-            </div>
-          </div>
-          <ion-button fill="clear" size="small" (click)="closeRoute()">
-            <ion-icon name="close-outline" color="medium"></ion-icon>
-          </ion-button>
+      <div class="carte">
+        <!-- Carte Leaflet -->
+        <div #mapContainer id="map"></div>
+        
+        <!-- Bouton de fermeture -->
+        <div class="cross" (click)="goBack()">
+          <ion-icon name="close-outline"></ion-icon>
         </div>
         
-        <div class="route-info" *ngIf="currentRoute">
-          <div class="route-distance">{{ currentRoute.distance }}</div>
-          <div class="route-modes">
-            <ion-button 
-              fill="clear" 
-              size="small" 
-              [color]="routeMode === 'walking' ? 'primary' : 'medium'"
-              (click)="changeRouteMode('walking')"
-            >
-              <ion-icon name="walk-outline"></ion-icon>
-            </ion-button>
-            <ion-button 
-              fill="clear" 
-              size="small" 
-              [color]="routeMode === 'driving' ? 'primary' : 'medium'"
-              (click)="changeRouteMode('driving')"
-            >
-              <ion-icon name="car-outline"></ion-icon>
-            </ion-button>
+        <!-- Barre de recherche -->
+        <div class="searchbar">  
+          <ion-searchbar 
+            mode="ios" 
+            [(ngModel)]="searchText" 
+            (ionInput)="search($event)" 
+            placeholder="Rechercher une cité..."
+            show-clear-button="focus">
+          </ion-searchbar>
+        </div>
+
+        <!-- Résultats de recherche -->
+        <div class="search-results-container" *ngIf="pointsInteretFiltered.length > 0">
+          <div 
+            class="search-result" 
+            *ngFor="let pointInteret of pointsInteretFiltered; trackBy: trackByLocation"
+            (click)="calculateItinerary(pointInteret)">
+            {{ pointInteret.nom }} - 
+            <span class="categorie">{{ getCategoryName(pointInteret) }}</span>
           </div>
+        </div>
+
+        <!-- Indicateurs de durée -->
+        <div class="type-container" *ngIf="pointsInteretFiltered.length === 0 && showDurations">
+          <div class="type" *ngIf="walkingDuration.calculated">
+            <span>{{ walkingDuration.value }}</span>
+            <ion-icon name="walk-outline"></ion-icon>
+          </div>
+          
+          <div class="type" *ngIf="ridingDuration.calculated">
+            <span>{{ ridingDuration.value }}</span>
+            <ion-icon name="bicycle-outline"></ion-icon>
+          </div>
+
+          <div class="type" *ngIf="drivingDuration.calculated">
+            <span>{{ drivingDuration.value }}</span>
+            <ion-icon name="car-outline"></ion-icon>
+          </div>
+          
+          <div class="type" *ngIf="trainDuration.calculated">
+            <span>{{ trainDuration.value }}</span>
+            <ion-icon name="train-outline"></ion-icon>
+          </div>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="action-buttons" *ngIf="selectedLocation">
+          <ion-button 
+            fill="solid" 
+            color="primary" 
+            size="small"
+            (click)="calculateFromCurrentPosition()">
+            <ion-icon name="location-outline" slot="start"></ion-icon>
+            Depuis ma position
+          </ion-button>
+          
+          <ion-button 
+            fill="outline" 
+            color="primary" 
+            size="small"
+            (click)="calculateFromCampus()">
+            <ion-icon name="business-outline" slot="start"></ion-icon>
+            Depuis le campus
+          </ion-button>
         </div>
       </div>
     </ion-content>
-
-    <!-- Modal de sélection de destination -->
-    <ion-modal [isOpen]="showDestinationModal" (didDismiss)="closeDestinationModal()">
-      <ng-template>
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2>Changer position</h2>
-            <ion-button fill="clear" size="small" (click)="closeDestinationModal()">
-              <ion-icon name="close-outline"></ion-icon>
-            </ion-button>
-          </div>
-          <div class="destination-options">
-            <ion-item button (click)="selectDestination('position')">
-              <ion-label>Ma position</ion-label>
-            </ion-item>
-            <ion-item button (click)="selectDestination('campus')">
-              <ion-label>Le campus d'Eyang</ion-label>
-            </ion-item>
-          </div>
-        </div>
-      </ng-template>
-    </ion-modal>
-
-    <!-- Modal de détails de cité depuis la carte -->
-    <ion-modal [isOpen]="showCityModal" (didDismiss)="closeCityModal()">
-      <ng-template>
-        <div class="city-modal-content" *ngIf="selectedCityFromMap">
-          <div class="city-modal-header">
-            <ion-button fill="clear" size="small" (click)="closeCityModal()">
-              <ion-icon name="close-outline"></ion-icon>
-            </ion-button>
-          </div>
-          
-          <div class="city-image-container">
-            <img [src]="getCityImage(selectedCityFromMap.id)" [alt]="selectedCityFromMap.name" />
-          </div>
-
-          <div class="city-info-section">
-            <div class="city-header">
-              <h2>{{ selectedCityFromMap.name }}</h2>
-              <div class="city-rating">
-                <ion-icon name="star" color="warning"></ion-icon>
-                <span>{{ selectedCityFromMap.rating }}</span>
-              </div>
-            </div>
-
-            <div class="city-stats">
-              <span class="rooms-count">{{ selectedCityFromMap.rooms }} chambres</span>
-              <ion-badge color="success" *ngIf="selectedCityFromMap.available">
-                {{ selectedCityFromMap.available }} Chambres libres
-              </ion-badge>
-            </div>
-
-            <div class="city-description">
-              <p>{{ getCityDescription(selectedCityFromMap.id) }}</p>
-            </div>
-
-            <div class="city-price">
-              <h3>Prix de la chambre</h3>
-              <div class="price-info">
-                <span class="main-price">{{ selectedCityFromMap.price | number }} FCFA/mois</span>
-                <span class="yearly-price">({{ (selectedCityFromMap.price! * 10) | number }} FCFA / 10 mois)</span>
-              </div>
-            </div>
-
-            <div class="city-location">
-              <h3>🗺️ Localisation</h3>
-              <div class="location-info">
-                <p>📍 Distance depuis votre position : {{ selectedCityFromMap.distance }}</p>
-                <p>🚶 Temps de marche : {{ selectedCityFromMap.walkTime }}</p>
-                <p>🏫 Distance du campus : 1.2km</p>
-              </div>
-            </div>
-
-            <div class="city-amenities">
-              <h3>📋 Commodités</h3>
-              <div class="amenities-list">
-                <span class="amenity">• Meublée</span>
-                <span class="amenity">• Sécurisée</span>
-                <span class="amenity">• Électricité</span>
-                <span class="amenity">• Eau courante</span>
-              </div>
-            </div>
-
-            <div class="city-comments-preview">
-              <h3>💬 Commentaires ({{ getCommentsCount(selectedCityFromMap.id) }})</h3>
-              <div class="comment-preview" *ngFor="let comment of getPreviewComments(selectedCityFromMap.id)">
-                <div class="comment-author">~{{ comment.author }}</div>
-                <div class="comment-rating">
-                  <ion-icon *ngFor="let i of [1,2,3,4,5]" 
-                    [name]="comment.rating >= i ? 'star' : 'star-outline'"
-                    [class.filled]="comment.rating >= i">
-                  </ion-icon>
-                </div>
-                <p class="comment-text">{{ comment.text }}</p>
-                <span class="comment-date">Publié le {{ comment.date }}</span>
-              </div>
-              <ion-button fill="clear" color="primary" (click)="viewAllComments()">
-                Plus
-              </ion-button>
-            </div>
-
-            <div class="city-actions">
-              <ion-button expand="block" color="primary" (click)="viewCityDetails()">
-                Voir plus
-              </ion-button>
-              <ion-button expand="block" fill="outline" color="primary" (click)="calculateRouteToCity()">
-                Itinéraire
-              </ion-button>
-            </div>
-          </div>
-        </div>
-      </ng-template>
-    </ion-modal>
 
     <!-- Footer avec navigation -->
     <ion-footer class="ion-no-border">
@@ -290,7 +165,7 @@ interface RouteInfo {
         </ion-tab-button>
 
         <ion-tab-button class="active">
-          <ion-icon name="location-outline"></ion-icon>
+          <ion-icon name="map-outline"></ion-icon>
           <ion-label>Carte</ion-label>
         </ion-tab-button>
 
@@ -313,428 +188,171 @@ interface RouteInfo {
       --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
-    /* Header */
-    ion-header ion-toolbar {
+    #map {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    .carte {
+      display: block;
+      width: 100%;
+      height: 100vh;
+      background-color: #f5f5f5;
+      position: relative;
+    }
+
+    .cross {
+      margin-top: 2em;
+      margin-left: 1em;
+      width: 2.5em;
+      height: 2.5em;
+      background-color: rgba(0, 0, 0, 0.7);
+      border-radius: 50%;
+      position: absolute;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .cross:hover {
+      background-color: rgba(0, 0, 0, 0.9);
+      transform: scale(1.1);
+    }
+
+    .cross ion-icon {
+      font-size: 1.2em;
+    }
+
+    .searchbar {
+      z-index: 100;
+      width: 100%;
+      padding: 4em 1em 0 1em;
+      position: absolute;
+      top: 0;
+    }
+
+    .searchbar ion-searchbar {
       --background: white;
       --color: var(--text-primary);
-    }
-
-    ion-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    /* Barre de recherche */
-    .search-container {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease;
-      background: white;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .search-container.active {
-      max-height: 80px;
-      padding: 8px 16px;
-    }
-
-    .custom-searchbar {
-      --background: #f8f9fa;
-      --border-radius: 12px;
-      --box-shadow: none;
       --placeholder-color: var(--text-muted);
-      --color: var(--text-primary);
+      --border-radius: 12px;
+      --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      --icon-color: var(--primary-color);
     }
 
-    /* Résultats de recherche */
-    .search-results {
+    .search-results-container {
+      z-index: 1000;
+      background-color: white;
+      color: var(--text-secondary);
+      width: 94%;
+      display: block;
+      margin: auto;
       position: absolute;
-      top: 80px;
-      left: 0;
-      right: 0;
-      z-index: 999;
-      background: white;
+      left: 3%;
+      top: 8.5em;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       max-height: 300px;
       overflow-y: auto;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
-    .results-header {
-      padding: 12px 16px;
+    .search-result {
+      width: 100%;
+      padding: 1em;
+      background-color: white;
       border-bottom: 1px solid var(--border-color);
-      background: #f8f9fa;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    .results-header h3 {
-      margin: 0;
+    .search-result:last-child {
+      border-bottom: none;
+    }
+
+    .search-result:hover {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .search-result:hover .categorie {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .categorie {
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--primary-color);
+      font-size: 0.8em;
+      letter-spacing: 0.5px;
+    }
+
+    .type-container {
+      z-index: 100;
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      gap: 8px;
+      position: absolute;
+      bottom: 120px;
+      padding: 0 1em;
+    }
+    
+    .type {
+      background-color: white;
+      border-radius: 25px;
+      color: var(--text-secondary);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(10px);
+      min-width: 60px;
+      justify-content: center;
+    }
+
+    .type span {
       font-size: 14px;
       font-weight: 600;
       color: var(--text-primary);
     }
 
-    .search-results-list {
-      background: white;
+    .type ion-icon {
+      font-size: 1.2em;
+      color: var(--primary-color);
     }
 
-    .search-result-item {
+    .action-buttons {
+      position: absolute;
+      bottom: 140px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      z-index: 1000;
+    }
+
+    .action-buttons ion-button {
+      --border-radius: 20px;
       --padding-start: 16px;
       --padding-end: 16px;
-      --min-height: 70px;
-    }
-
-    .search-result-content h4 {
-      margin: 0 0 4px 0;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .search-result-content p {
-      margin: 0 0 2px 0;
-      font-size: 14px;
-      color: var(--text-secondary);
-    }
-
-    .search-result-content .distance {
+      --padding-top: 8px;
+      --padding-bottom: 8px;
       font-size: 12px;
-      color: var(--primary-color);
-      font-weight: 600;
-    }
-
-    /* Carte */
-    .map-container {
-      height: 100%;
-      width: 100%;
-      transition: height 0.3s ease;
-    }
-
-    .map-container.with-search {
-      height: calc(100% - 80px);
-      margin-top: 80px;
-    }
-
-    /* Panneau d'itinéraire */
-    .route-panel {
-      position: absolute;
-      top: 16px;
-      left: 16px;
-      right: 16px;
-      z-index: 1000;
-      background: white;
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .route-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 12px;
-    }
-
-    .route-points {
-      flex: 1;
-    }
-
-    .route-point {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 8px;
-    }
-
-    .route-point:last-child {
-      margin-bottom: 0;
-    }
-
-    .point-icon {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .point-icon.start {
-      background: #10b981;
-    }
-
-    .point-icon.end {
-      background: #ef4444;
-    }
-
-    .route-line {
-      width: 2px;
-      height: 20px;
-      background: linear-gradient(to bottom, #10b981, #ef4444);
-      margin-left: 5px;
-      margin-bottom: 8px;
-    }
-
-    .route-point span {
-      font-size: 14px;
-      color: var(--text-primary);
-      font-weight: 500;
-    }
-
-    .route-info {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .route-distance {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--primary-color);
-    }
-
-    .route-modes {
-      display: flex;
-      gap: 8px;
-    }
-
-    /* Modal de destination */
-    .modal-content {
-      padding: 20px;
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
-    .modal-header h2 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .destination-options ion-item {
-      --padding-start: 0;
-      --padding-end: 0;
-      --min-height: 48px;
-      margin-bottom: 8px;
-    }
-
-    /* Modal de cité */
-    .city-modal-content {
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    .city-modal-header {
-      position: sticky;
-      top: 0;
-      background: white;
-      z-index: 10;
-      padding: 16px;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .city-image-container {
-      height: 200px;
-      overflow: hidden;
-    }
-
-    .city-image-container img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .city-info-section {
-      padding: 20px;
-    }
-
-    .city-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .city-header h2 {
-      margin: 0;
-      font-size: 20px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .city-rating {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .city-rating ion-icon {
-      font-size: 16px;
-    }
-
-    .city-rating span {
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .city-stats {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .rooms-count {
-      font-size: 14px;
-      color: var(--text-secondary);
-    }
-
-    .city-description {
-      margin-bottom: 20px;
-    }
-
-    .city-description p {
-      margin: 0;
-      font-size: 14px;
-      color: var(--text-secondary);
-      line-height: 1.5;
-    }
-
-    .city-price {
-      margin-bottom: 20px;
-    }
-
-    .city-price h3 {
-      margin: 0 0 8px 0;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .price-info {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .main-price {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--primary-color);
-    }
-
-    .yearly-price {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .city-location {
-      margin-bottom: 20px;
-    }
-
-    .city-location h3 {
-      margin: 0 0 8px 0;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .location-info p {
-      margin: 0 0 4px 0;
-      font-size: 14px;
-      color: var(--text-secondary);
-    }
-
-    .city-amenities {
-      margin-bottom: 20px;
-    }
-
-    .city-amenities h3 {
-      margin: 0 0 8px 0;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .amenities-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .amenity {
-      font-size: 14px;
-      color: var(--text-secondary);
-    }
-
-    .city-comments-preview {
-      margin-bottom: 20px;
-    }
-
-    .city-comments-preview h3 {
-      margin: 0 0 12px 0;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .comment-preview {
-      background: #f8f9fa;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 8px;
-    }
-
-    .comment-author {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 4px;
-    }
-
-    .comment-rating {
-      display: flex;
-      gap: 2px;
-      margin-bottom: 8px;
-    }
-
-    .comment-rating ion-icon {
-      font-size: 12px;
-      color: #ddd;
-    }
-
-    .comment-rating ion-icon.filled {
-      color: #ffd700;
-    }
-
-    .comment-text {
-      margin: 0 0 8px 0;
-      font-size: 12px;
-      color: var(--text-secondary);
-      line-height: 1.4;
-    }
-
-    .comment-date {
-      font-size: 10px;
-      color: var(--text-muted);
-    }
-
-    .city-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .city-actions ion-button {
-      --border-radius: 8px;
-      height: 48px;
       font-weight: 500;
     }
 
@@ -769,19 +387,28 @@ interface RouteInfo {
 
     /* Responsive */
     @media (max-width: 768px) {
-      .route-panel {
-        top: 8px;
-        left: 8px;
-        right: 8px;
-        padding: 12px;
+      .searchbar {
+        padding: 3em 0.5em 0 0.5em;
       }
 
-      .route-distance {
-        font-size: 16px;
+      .type-container {
+        bottom: 100px;
+        gap: 6px;
       }
 
-      .city-info-section {
-        padding: 16px;
+      .type {
+        padding: 6px 12px;
+        min-width: 50px;
+      }
+
+      .type span {
+        font-size: 12px;
+      }
+
+      .action-buttons {
+        bottom: 120px;
+        flex-direction: column;
+        gap: 8px;
       }
     }
   `],
@@ -808,109 +435,94 @@ interface RouteInfo {
     IonBadge
   ]
 })
-export class MapPage implements OnInit, AfterViewInit {
+export class MapPage implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('mapContainer', { static: false }) mapContainer!: ElementRef;
 
   private map!: L.Map;
   private userLocation: [number, number] = [3.8667, 11.5167]; // Yaoundé par défaut
+  private campusLocation: [number, number] = [3.8620, 11.5120]; // Institut Saint Jean Eyang
   private routeLayer?: L.Polyline;
   private markers: L.Marker[] = [];
 
-  showSearch = false;
-  searchTerm = '';
-  showSearchResults = false;
-  showRoutePanel = false;
-  showDestinationModal = false;
-  showCityModal = false;
-  
-  routeStart = 'Ma position';
-  routeEnd = '';
-  routeMode: 'walking' | 'driving' = 'walking';
-  currentRoute?: RouteInfo;
-  selectedCityFromMap?: MapLocation;
+  searchText = '';
+  showDurations = false;
+  selectedLocation?: MapLocation;
 
-  locations: MapLocation[] = [
+  // Durées de transport
+  walkingDuration: DurationInfo = { value: '--', calculated: false };
+  drivingDuration: DurationInfo = { value: '--', calculated: false };
+  ridingDuration: DurationInfo = { value: '--', calculated: false };
+  trainDuration: DurationInfo = { value: '--', calculated: false };
+
+  // Vitesses moyennes (en m/s)
+  averageWalkingSpeed = 3.33; // 12 km/h
+  averageDrivingSpeed = 13.89; // 50 km/h
+  averageRidingSpeed = 8.33; // 30 km/h
+  averageTrainSpeed = 22.22; // 80 km/h
+
+  // Données des cités
+  pointsInteret: MapLocation[] = [
     {
       id: 1,
-      name: 'Cité Bevina',
-      lat: 3.8700,
-      lng: 11.5200,
+      nom: 'Cité Bevina',
+      categorie: { nom: 'Résidence étudiante' },
+      adresses: [{ latitude: 3.8700, longitude: 11.5200 }],
       type: 'cite',
       rooms: 28,
       available: 2,
       rating: 4.5,
-      distance: '950m',
-      walkTime: '12 minutes',
       price: 55000
     },
     {
       id: 2,
-      name: 'Cité Colonel',
-      lat: 3.8650,
-      lng: 11.5150,
+      nom: 'Cité Colonel',
+      categorie: { nom: 'Résidence étudiante' },
+      adresses: [{ latitude: 3.8650, longitude: 11.5150 }],
       type: 'cite',
       rooms: 28,
       available: 5,
       rating: 4.2,
-      distance: '1.2km',
-      walkTime: '15 minutes',
       price: 50000
     },
     {
       id: 3,
-      name: 'Cité RPN',
-      lat: 3.8720,
-      lng: 11.5180,
+      nom: 'Cité RPN',
+      categorie: { nom: 'Résidence étudiante' },
+      adresses: [{ latitude: 3.8720, longitude: 11.5180 }],
       type: 'cite',
       rooms: 28,
       available: 3,
       rating: 4.0,
-      distance: '800m',
-      walkTime: '10 minutes',
       price: 45000
     },
     {
       id: 4,
-      name: 'City of peace',
-      lat: 3.8680,
-      lng: 11.5160,
+      nom: 'City of Peace',
+      categorie: { nom: 'Résidence premium' },
+      adresses: [{ latitude: 3.8680, longitude: 11.5160 }],
       type: 'cite',
       rooms: 35,
       available: 1,
       rating: 4.8,
-      distance: '1.1km',
-      walkTime: '14 minutes',
       price: 60000
     },
     {
       id: 5,
-      name: 'INSTITUT SAINT JEAN (SITE D\'EYANG)',
-      lat: 3.8620,
-      lng: 11.5120,
+      nom: 'Institut Saint Jean (Site d\'Eyang)',
+      categorie: { nom: 'Campus universitaire' },
+      adresses: [{ latitude: 3.8620, longitude: 11.5120 }],
       type: 'campus'
     }
   ];
 
-  searchResults: MapLocation[] = [];
-
-  // Données des commentaires
-  private commentsData = {
-    1: [
-      { author: 'Roy Melvin', rating: 4, text: 'Je ne sais même pas ce que je peux dire sur cette cité, parce que je ne l\'aime pas vraiment.', date: '02/05/2025' },
-      { author: 'Anonyme', rating: 4, text: 'Anonymement, je laisse une bonne note à cette cité pour son libertinage absolu.', date: '01/05/2025' },
-      { author: 'Steves DK', rating: 4, text: 'Entre temps moi je ne suis pas par rapport à cette cité, mais comme on m\'a forcé à venir parler ici...', date: '30/04/2025' }
-    ],
-    2: [
-      { author: 'Marie L.', rating: 5, text: 'Excellente cité, très bien située et sécurisée.', date: '03/05/2025' },
-      { author: 'Paul K.', rating: 3, text: 'Correct mais pourrait être mieux entretenu.', date: '01/05/2025' }
-    ]
-  };
+  pointsInteretFiltered: MapLocation[] = [];
 
   constructor(
     private router: Router,
+    private route: ActivatedRoute,
+    private toastController: ToastController,
     private alertController: AlertController,
-    private loadingController: LoadingController,
-    private toastController: ToastController
+    private loadingController: LoadingController
   ) {
     addIcons({
       menuOutline,
@@ -926,16 +538,33 @@ export class MapPage implements OnInit, AfterViewInit {
       bicycleOutline,
       chevronForwardOutline,
       starOutline,
-      star
+      star,
+      trainOutline,
+      mapOutline
     });
   }
 
   ngOnInit() {
+    // Vérifier si on arrive avec des données de navigation
+    const navigation = this.router.getCurrentNavigation();
+    if (navigation?.extras.state) {
+      console.log('Navigation state:', navigation.extras.state);
+      this.calculateItinerary(navigation.extras.state);
+    }
+
     this.getCurrentLocation();
   }
 
   ngAfterViewInit() {
-    this.initializeMap();
+    setTimeout(() => {
+      this.initializeMap();
+    }, 100);
+  }
+
+  ngOnDestroy() {
+    if (this.map) {
+      this.map.remove();
+    }
   }
 
   private async getCurrentLocation() {
@@ -955,22 +584,18 @@ export class MapPage implements OnInit, AfterViewInit {
       }
     } catch (error) {
       console.warn('Géolocalisation non disponible, utilisation de la position par défaut');
+      await this.showErrorToast('geolocalisation', 'Géolocalisation impossible');
     }
   }
 
   private initializeMap() {
     // Configuration des icônes Leaflet
-    const iconRetinaUrl = 'assets/marker-icon-2x.png';
-    const iconUrl = 'assets/marker-icon.png';
-    const shadowUrl = 'assets/marker-shadow.png';
     const iconDefault = L.icon({
-      iconRetinaUrl,
-      iconUrl,
-      shadowUrl,
+      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
       iconSize: [25, 41],
       iconAnchor: [12, 41],
       popupAnchor: [1, -34],
-      tooltipAnchor: [16, -28],
       shadowSize: [41, 41]
     });
     L.Marker.prototype.options.icon = iconDefault;
@@ -995,43 +620,36 @@ export class MapPage implements OnInit, AfterViewInit {
     // Ajout des marqueurs
     this.addMarkersToMap();
     this.updateUserLocationOnMap();
-
-    // Configuration des fonctions globales pour les popups
-    (window as any).selectCiteFromMap = (id: number) => {
-      this.selectCityFromMap(id);
-    };
-
-    (window as any).navigateToCite = (id: number) => {
-      this.calculateRoute(id);
-    };
   }
 
   private addMarkersToMap() {
-    this.locations.forEach(location => {
-      const marker = this.createMarker(location);
-      this.markers.push(marker);
+    this.pointsInteret.forEach(location => {
+      if (location.adresses && location.adresses.length > 0) {
+        const marker = this.createMarker(location);
+        this.markers.push(marker);
+      }
     });
   }
 
   private createMarker(location: MapLocation): L.Marker {
-    const icon = this.getMarkerIcon(location.type, location.available);
-    const marker = L.marker([location.lat, location.lng], { icon }).addTo(this.map);
+    const coords = location.adresses[0];
+    const marker = L.marker([coords.latitude, coords.longitude]).addTo(this.map);
 
     // Popup pour les cités
     if (location.type === 'cite') {
       const popupContent = `
-        <div class="marker-popup">
-          <h4>${location.name}</h4>
-          <div class="popup-rating">
+        <div style="text-align: center; min-width: 200px;">
+          <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">${location.nom}</h4>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
             <span>⭐ ${location.rating}/5</span>
             <span>(${location.rooms} chambres)</span>
           </div>
-          ${location.available ? `<p class="available">🟢 ${location.available} Chambres libres</p>` : ''}
-          <div class="popup-actions">
-            <button onclick="window.selectCiteFromMap(${location.id})" class="popup-button">
+          ${location.available ? `<p style="margin: 8px 0; font-size: 12px; color: #10b981; font-weight: 600;">🟢 ${location.available} Chambres libres</p>` : ''}
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button onclick="window.selectCiteFromMap(${location.id})" style="flex: 1; padding: 8px 12px; border: none; border-radius: 6px; background: #1dd1a1; color: white; font-size: 12px; font-weight: 600; cursor: pointer;">
               Voir plus
             </button>
-            <button onclick="window.navigateToCite(${location.id})" class="popup-button route">
+            <button onclick="window.navigateToCite(${location.id})" style="flex: 1; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f8f9fa; color: #374151; font-size: 12px; font-weight: 600; cursor: pointer;">
               Itinéraire
             </button>
           </div>
@@ -1039,42 +657,10 @@ export class MapPage implements OnInit, AfterViewInit {
       `;
       marker.bindPopup(popupContent);
     } else {
-      marker.bindPopup(`<div class="marker-popup"><h4>${location.name}</h4></div>`);
+      marker.bindPopup(`<div style="text-align: center;"><h4>${location.nom}</h4></div>`);
     }
 
     return marker;
-  }
-
-  private getMarkerIcon(type: string, available?: number): L.Icon | L.DivIcon {
-    let color = '#1dd1a1';
-    let emoji = '🏠';
-    
-    switch (type) {
-      case 'cite':
-        if (available && available > 0) {
-          color = '#10b981'; // Vert pour disponible
-          emoji = '🟢';
-        } else {
-          color = '#ef4444'; // Rouge pour plein
-          emoji = '🔴';
-        }
-        break;
-      case 'campus':
-        color = '#9e9e9e'; // Gris pour le campus
-        emoji = '⭐';
-        break;
-      case 'user':
-        color = '#2196f3'; // Bleu pour l'utilisateur
-        emoji = '📍';
-        break;
-    }
-
-    return L.divIcon({
-      className: 'custom-marker',
-      html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 12px;">${emoji}</div>`,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12]
-    });
   }
 
   private updateUserLocationOnMap() {
@@ -1086,234 +672,343 @@ export class MapPage implements OnInit, AfterViewInit {
     }
 
     // Ajouter le nouveau marqueur utilisateur
-    const userIcon = this.getMarkerIcon('user');
-    const userMarker = L.marker(this.userLocation, { icon: userIcon }).addTo(this.map);
+    const userMarker = L.marker(this.userLocation).addTo(this.map);
     (userMarker as any).isUserMarker = true;
-    userMarker.bindPopup('<div class="marker-popup"><h4>Ma position</h4></div>');
+    userMarker.bindPopup('<div style="text-align: center;"><h4>Ma position</h4></div>');
     this.markers.push(userMarker);
 
     // Centrer la carte sur la position de l'utilisateur
     this.map.setView(this.userLocation, 14);
   }
 
-  toggleSearch() {
-    this.showSearch = !this.showSearch;
-    if (!this.showSearch) {
-      this.searchTerm = '';
-      this.showSearchResults = false;
-      this.searchResults = [];
-    }
-  }
+  search(event: any) {
+    const searchValue = event.target.value?.toLowerCase() || '';
+    this.searchText = searchValue;
 
-  onSearch(event: any) {
-    const term = event.target.value?.toLowerCase() || '';
-    this.searchTerm = term;
-
-    if (term.trim()) {
-      this.showSearchResults = true;
-      this.searchResults = this.locations.filter(location =>
-        location.name.toLowerCase().includes(term) ||
-        (location.type === 'cite' && 'cité'.includes(term))
-      );
+    if (searchValue.trim()) {
+      this.pointsInteretFiltered = this.pointsInteret
+        .filter(location => 
+          location.nom.toLowerCase().includes(searchValue) ||
+          location.categorie.nom.toLowerCase().includes(searchValue)
+        )
+        .slice(0, 5);
     } else {
-      this.showSearchResults = false;
-      this.searchResults = [];
+      this.pointsInteretFiltered = [];
     }
   }
 
-  selectLocationFromSearch(location: MapLocation) {
-    this.showSearch = false;
-    this.showSearchResults = false;
-    this.searchTerm = '';
+  getCategoryName(pointInteret: MapLocation): string {
+    const categories = pointInteret.categorie.nom.split(' ');
     
-    // Centrer la carte sur la location
-    this.map.setView([location.lat, location.lng], 16);
-    
-    // Ouvrir le popup du marqueur
-    const marker = this.markers.find(m => {
-      const latLng = m.getLatLng();
-      return latLng.lat === location.lat && latLng.lng === location.lng;
-    });
-    
-    if (marker) {
-      marker.openPopup();
+    if (!pointInteret.categorie.nom || pointInteret.categorie.nom === '') {
+      return '(inconnu)';
+    } else {
+      return categories.length === 1 ? pointInteret.categorie.nom : '(plusieurs)';
     }
   }
 
-  selectCityFromMap(id: number) {
-    const city = this.locations.find(l => l.id === id);
-    if (city) {
-      this.selectedCityFromMap = city;
-      this.showCityModal = true;
-    }
-  }
+  async calculateItinerary(pointInteret: MapLocation) {
+    this.searchText = pointInteret.nom;
+    this.pointsInteretFiltered = [];
+    this.selectedLocation = pointInteret;
 
-  closeCityModal() {
-    this.showCityModal = false;
-    this.selectedCityFromMap = undefined;
-  }
-
-  getCityImage(id: number): string {
-    const images = {
-      1: 'https://images.pexels.com/photos/466685/pexels-photo-466685.jpeg',
-      2: 'https://images.pexels.com/photos/1370704/pexels-photo-1370704.jpeg',
-      3: 'https://images.pexels.com/photos/1449824/pexels-photo-1449824.jpeg',
-      4: 'https://images.pexels.com/photos/2102587/pexels-photo-2102587.jpeg'
-    };
-    return images[id as keyof typeof images] || images[1];
-  }
-
-  getCityDescription(id: number): string {
-    const descriptions = {
-      1: 'Une cité paisible qui n\'a pas de barrière mais n\'a aucun souci à accueillir les étudiants qui veulent bien y habiter.',
-      2: 'Cité moderne avec toutes les commodités nécessaires pour un séjour confortable.',
-      3: 'Environnement calme et sécurisé, idéal pour les études.',
-      4: 'Cité haut de gamme avec services premium et sécurité renforcée.'
-    };
-    return descriptions[id as keyof typeof descriptions] || descriptions[1];
-  }
-
-  getCommentsCount(id: number): number {
-    return this.commentsData[id as keyof typeof this.commentsData]?.length || 0;
-  }
-
-  getPreviewComments(id: number) {
-    return this.commentsData[id as keyof typeof this.commentsData]?.slice(0, 2) || [];
-  }
-
-  viewAllComments() {
-    // Navigation vers la page de commentaires
-    this.closeCityModal();
-    // Ici vous pourriez naviguer vers une page de commentaires dédiée
-  }
-
-  viewCityDetails() {
-    if (this.selectedCityFromMap) {
-      this.closeCityModal();
-      this.router.navigate(['/city-details', this.selectedCityFromMap.id]);
-    }
-  }
-
-  calculateRouteToCity() {
-    if (this.selectedCityFromMap) {
-      this.closeCityModal();
-      this.calculateRoute(this.selectedCityFromMap.id);
-    }
-  }
-
-  async calculateRoute(destinationId: number) {
-    const destination = this.locations.find(l => l.id === destinationId);
-    if (!destination) return;
-
-    const loading = await this.loadingController.create({
-      message: 'Calcul de l\'itinéraire...',
-      duration: 1000
-    });
-    await loading.present();
-
-    // Simulation du calcul d'itinéraire
-    setTimeout(() => {
-      this.showRoutePanel = true;
-      this.routeEnd = destination.name;
+    if (pointInteret.adresses && pointInteret.adresses.length > 0) {
+      this.resetDurations();
       
-      // Simulation des données d'itinéraire
-      const distance = this.calculateDistance(
-        this.userLocation[0], this.userLocation[1],
-        destination.lat, destination.lng
-      );
-      
-      this.currentRoute = {
-        distance: `${Math.round(distance * 1000)}m`,
-        duration: `${Math.round(distance * 15)} min`,
-        coordinates: [this.userLocation, [destination.lat, destination.lng]]
-      };
+      try {
+        await this.generateMap(
+          pointInteret.adresses[0].latitude, 
+          pointInteret.adresses[0].longitude, 
+          pointInteret.nom
+        );
+        
+        const distance = await this.measureDistance(
+          pointInteret.adresses[0].latitude, 
+          pointInteret.adresses[0].longitude
+        );
 
-      this.drawRoute();
-      loading.dismiss();
-    }, 1000);
-  }
-
-  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371; // Rayon de la Terre en km
-    const dLat = this.deg2rad(lat2 - lat1);
-    const dLon = this.deg2rad(lon2 - lon1);
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  }
-
-  private deg2rad(deg: number): number {
-    return deg * (Math.PI/180);
-  }
-
-  private drawRoute() {
-    if (this.routeLayer) {
-      this.map.removeLayer(this.routeLayer);
-    }
-
-    if (this.currentRoute) {
-      this.routeLayer = L.polyline(this.currentRoute.coordinates, {
-        color: '#1dd1a1',
-        weight: 4,
-        opacity: 0.8
-      }).addTo(this.map);
-
-      // Ajuster la vue pour inclure tout l'itinéraire
-      const group = new L.FeatureGroup([this.routeLayer]);
-      this.map.fitBounds(group.getBounds().pad(0.1));
-    }
-  }
-
-  closeRoute() {
-    this.showRoutePanel = false;
-    if (this.routeLayer) {
-      this.map.removeLayer(this.routeLayer);
-      this.routeLayer = undefined;
-    }
-    this.currentRoute = undefined;
-  }
-
-  changeRouteMode(mode: 'walking' | 'driving') {
-    this.routeMode = mode;
-    // Ici vous pourriez recalculer l'itinéraire selon le mode
-    this.showToast(`Mode ${mode === 'walking' ? 'piéton' : 'voiture'} sélectionné`);
-  }
-
-  openDestinationModal() {
-    this.showDestinationModal = true;
-  }
-
-  closeDestinationModal() {
-    this.showDestinationModal = false;
-  }
-
-  selectDestination(type: 'campus' | 'position') {
-    this.closeDestinationModal();
-    
-    if (type === 'campus') {
-      const campus = this.locations.find(l => l.type === 'campus');
-      if (campus) {
-        this.calculateRoute(campus.id);
+        this.calculateDuration(this.walkingDuration, this.averageWalkingSpeed, distance);
+        this.calculateDuration(this.ridingDuration, this.averageRidingSpeed, distance);
+        this.calculateDuration(this.drivingDuration, this.averageDrivingSpeed, distance);
+        this.calculateDuration(this.trainDuration, this.averageTrainSpeed, distance);
+        
+        this.showDurations = true;
+      } catch (error) {
+        await this.showErrorToast('itineraire', 'Erreur lors du calcul de l\'itinéraire');
       }
     } else {
-      this.routeStart = 'Ma position';
-      this.showToast('Position actuelle sélectionnée comme point de départ');
+      await this.showErrorToast('itineraire', 'Aucune adresse disponible pour cette cité');
     }
+  }
+
+  async calculateFromCurrentPosition() {
+    if (this.selectedLocation) {
+      await this.calculateItinerary(this.selectedLocation);
+    }
+  }
+
+  async calculateFromCampus() {
+    if (this.selectedLocation && this.selectedLocation.adresses.length > 0) {
+      this.resetDurations();
+      
+      try {
+        await this.generateMapFromCampus(
+          this.selectedLocation.adresses[0].latitude,
+          this.selectedLocation.adresses[0].longitude,
+          this.selectedLocation.nom
+        );
+        
+        const distance = await this.measureDistanceFromCampus(
+          this.selectedLocation.adresses[0].latitude,
+          this.selectedLocation.adresses[0].longitude
+        );
+
+        this.calculateDuration(this.walkingDuration, this.averageWalkingSpeed, distance);
+        this.calculateDuration(this.ridingDuration, this.averageRidingSpeed, distance);
+        this.calculateDuration(this.drivingDuration, this.averageDrivingSpeed, distance);
+        this.calculateDuration(this.trainDuration, this.averageTrainSpeed, distance);
+        
+        this.showDurations = true;
+      } catch (error) {
+        await this.showErrorToast('itineraire', 'Erreur lors du calcul depuis le campus');
+      }
+    }
+  }
+
+  private resetDurations() {
+    this.walkingDuration = { value: '--', calculated: false };
+    this.ridingDuration = { value: '--', calculated: false };
+    this.drivingDuration = { value: '--', calculated: false };
+    this.trainDuration = { value: '--', calculated: false };
+    this.showDurations = false;
+  }
+
+  private calculateDuration(duration: DurationInfo, averageSpeed: number, distance: number) {
+    const _duration = distance / averageSpeed;
+    
+    if (_duration < 60) {
+      duration.value = Math.round(_duration) + 's';
+    } else if (_duration < 3600) {
+      duration.value = Math.round(_duration / 60) + 'm';
+    } else if (_duration < 86400) {
+      duration.value = Math.round(_duration / 3600) + 'h';
+    } else if (_duration < 2629746) {
+      duration.value = Math.round(_duration / 86400) + 'd';
+    } else if (_duration < 31536000) {
+      duration.value = Math.round(_duration / 2629746) + 'M';
+    } else {
+      duration.value = Math.round(_duration / 31536000) + 'y';
+    }
+    
+    duration.calculated = true;
+  }
+
+  private async measureDistance(lat2: number, lng2: number): Promise<number> {
+    return new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat1 = position.coords.latitude;
+          const lng1 = position.coords.longitude;
+          
+          const routeUrl = `https://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?steps=true&geometries=geojson`;
+          
+          fetch(routeUrl)
+            .then(response => response.json())
+            .then(data => {
+              if (data.routes && data.routes.length > 0) {
+                resolve(data.routes[0].distance);
+              } else {
+                reject('Aucun itinéraire trouvé');
+              }
+            })
+            .catch(error => reject(error));
+        },
+        (error) => reject(error),
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+  }
+
+  private async measureDistanceFromCampus(lat2: number, lng2: number): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const routeUrl = `https://router.project-osrm.org/route/v1/driving/${this.campusLocation[1]},${this.campusLocation[0]};${lng2},${lat2}?steps=true&geometries=geojson`;
+      
+      fetch(routeUrl)
+        .then(response => response.json())
+        .then(data => {
+          if (data.routes && data.routes.length > 0) {
+            resolve(data.routes[0].distance);
+          } else {
+            reject('Aucun itinéraire trouvé');
+          }
+        })
+        .catch(error => reject(error));
+    });
+  }
+
+  private async generateMap(destinationLat: number, destinationLon: number, destinationName: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.map) {
+        this.map.remove();
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+
+          this.map = L.map(this.mapContainer.nativeElement, {
+            zoomControl: false
+          }).setView([lat, lon], 13);
+
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+          }).addTo(this.map);
+
+          // Ajouter contrôle de zoom
+          L.control.zoom({ position: 'bottomright' }).addTo(this.map);
+
+          // Marqueur position actuelle
+          L.marker([lat, lon]).addTo(this.map)
+            .bindPopup('<b>Ma Position</b>')
+            .openPopup();
+
+          // Calculer et afficher l'itinéraire
+          const routeUrl = `https://router.project-osrm.org/route/v1/driving/${lon},${lat};${destinationLon},${destinationLat}?steps=true&geometries=geojson`;
+
+          fetch(routeUrl)
+            .then(response => response.json())
+            .then(data => {
+              if (data.routes && data.routes.length > 0) {
+                const route = data.routes[0].geometry.coordinates.map((coord: any) => {
+                  return [coord[1], coord[0]];
+                });
+
+                // Supprimer l'ancienne route si elle existe
+                if (this.routeLayer) {
+                  this.map.removeLayer(this.routeLayer);
+                }
+
+                // Ajouter la nouvelle route
+                this.routeLayer = L.polyline(route, { color: 'red', weight: 4 }).addTo(this.map);
+
+                // Marqueur destination
+                L.marker([destinationLat, destinationLon]).addTo(this.map)
+                  .bindPopup(destinationName);
+
+                // Ajuster le zoom
+                this.map.fitBounds(L.latLngBounds(route));
+
+                resolve();
+              } else {
+                reject('Aucun itinéraire trouvé');
+              }
+            })
+            .catch(error => reject(error));
+        },
+        (error) => {
+          // Fallback sans géolocalisation
+          this.map = L.map(this.mapContainer.nativeElement).setView([destinationLat, destinationLon], 13);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
+          L.control.zoom({ position: 'bottomright' }).addTo(this.map);
+          reject(error);
+        }
+      );
+    });
+  }
+
+  private async generateMapFromCampus(destinationLat: number, destinationLon: number, destinationName: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.map) {
+        this.map.remove();
+      }
+
+      this.map = L.map(this.mapContainer.nativeElement, {
+        zoomControl: false
+      }).setView(this.campusLocation, 13);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(this.map);
+
+      // Ajouter contrôle de zoom
+      L.control.zoom({ position: 'bottomright' }).addTo(this.map);
+
+      // Marqueur campus
+      L.marker(this.campusLocation).addTo(this.map)
+        .bindPopup('<b>Institut Saint Jean (Eyang)</b>')
+        .openPopup();
+
+      // Calculer et afficher l'itinéraire
+      const routeUrl = `https://router.project-osrm.org/route/v1/driving/${this.campusLocation[1]},${this.campusLocation[0]};${destinationLon},${destinationLat}?steps=true&geometries=geojson`;
+
+      fetch(routeUrl)
+        .then(response => response.json())
+        .then(data => {
+          if (data.routes && data.routes.length > 0) {
+            const route = data.routes[0].geometry.coordinates.map((coord: any) => {
+              return [coord[1], coord[0]];
+            });
+
+            // Supprimer l'ancienne route si elle existe
+            if (this.routeLayer) {
+              this.map.removeLayer(this.routeLayer);
+            }
+
+            // Ajouter la nouvelle route
+            this.routeLayer = L.polyline(route, { color: 'red', weight: 4 }).addTo(this.map);
+
+            // Marqueur destination
+            L.marker([destinationLat, destinationLon]).addTo(this.map)
+              .bindPopup(destinationName);
+
+            // Ajuster le zoom
+            this.map.fitBounds(L.latLngBounds(route));
+
+            resolve();
+          } else {
+            reject('Aucun itinéraire trouvé');
+          }
+        })
+        .catch(error => reject(error));
+    });
+  }
+
+  private async showErrorToast(type: string, message?: string) {
+    let toastMessage = message || 'Une erreur est survenue';
+    let icon = 'alert-circle-outline';
+
+    switch (type) {
+      case 'itineraire':
+        toastMessage = message || 'Aucun itinéraire trouvé';
+        icon = 'walk-outline';
+        break;
+      case 'geolocalisation':
+        toastMessage = message || 'Géolocalisation impossible';
+        icon = 'location-outline';
+        break;
+    }
+
+    const toast = await this.toastController.create({
+      message: toastMessage,
+      duration: 5000,
+      position: 'top',
+      color: 'danger',
+      icon: icon
+    });
+
+    await toast.present();
+  }
+
+  trackByLocation(index: number, location: MapLocation): number {
+    return location.id;
+  }
+
+  goBack() {
+    this.router.navigate(['/cities']);
   }
 
   navigateTo(route: string) {
     this.router.navigate([route]);
-  }
-
-  private async showToast(message: string) {
-    const toast = await this.toastController.create({
-      message,
-      duration: 2000,
-      position: 'bottom'
-    });
-    await toast.present();
   }
 }
